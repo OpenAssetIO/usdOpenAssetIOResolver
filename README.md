@@ -33,7 +33,7 @@ usdcat yourUsdFile.usd
 Before running any USD application
 
 ```sh
-export TF_DEBUG=OAIO_RESOLVER
+export TF_DEBUG=OPENASSETIO_RESOLVER
 ```
 
 To enable debug logging from the resolver.
