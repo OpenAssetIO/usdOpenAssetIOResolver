@@ -3,42 +3,44 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <pxr/usd/ar/defaultResolver.h>
 
 class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
  public:
   UsdOpenAssetIOResolver();
-  virtual ~UsdOpenAssetIOResolver();
+  ~UsdOpenAssetIOResolver() override;
 
  protected:
   /* Ar Resolver Implementation */
-  std::string _CreateIdentifier(const std::string &assetPath,
-                                const PXR_NS::ArResolvedPath &anchorAssetPath) const final;
-
-  std::string _CreateIdentifierForNewAsset(
+  [[nodiscard]] std::string _CreateIdentifier(
       const std::string &assetPath, const PXR_NS::ArResolvedPath &anchorAssetPath) const final;
 
-  PXR_NS::ArResolvedPath _Resolve(const std::string &assetPath) const final;
+  [[nodiscard]] std::string _CreateIdentifierForNewAsset(
+      const std::string &assetPath, const PXR_NS::ArResolvedPath &anchorAssetPath) const final;
 
-  PXR_NS::ArResolvedPath _ResolveForNewAsset(const std::string &assetPath) const final;
+  [[nodiscard]] PXR_NS::ArResolvedPath _Resolve(const std::string &assetPath) const final;
+
+  [[nodiscard]] PXR_NS::ArResolvedPath _ResolveForNewAsset(
+      const std::string &assetPath) const final;
 
   /* Asset Operations*/
-  std::string _GetExtension(const std::string &assetPath) const final;
+  [[nodiscard]] std::string _GetExtension(const std::string &assetPath) const final;
 
-  PXR_NS::ArAssetInfo _GetAssetInfo(const std::string &assetPath,
-                                    const PXR_NS::ArResolvedPath &resolvedPath) const final;
-
-  PXR_NS::ArTimestamp _GetModificationTimestamp(
+  [[nodiscard]] PXR_NS::ArAssetInfo _GetAssetInfo(
       const std::string &assetPath, const PXR_NS::ArResolvedPath &resolvedPath) const final;
 
-  std::shared_ptr<PXR_NS::ArAsset> _OpenAsset(
+  [[nodiscard]] PXR_NS::ArTimestamp _GetModificationTimestamp(
+      const std::string &assetPath, const PXR_NS::ArResolvedPath &resolvedPath) const final;
+
+  [[nodiscard]] std::shared_ptr<PXR_NS::ArAsset> _OpenAsset(
       const PXR_NS::ArResolvedPath &resolvedPath) const final;
 
-  bool _CanWriteAssetToPath(const PXR_NS::ArResolvedPath &resolvedPath,
-                            std::string *whyNot) const final;
+  [[nodiscard]] bool _CanWriteAssetToPath(const PXR_NS::ArResolvedPath &resolvedPath,
+                                          std::string *whyNot) const final;
 
-  std::shared_ptr<PXR_NS::ArWritableAsset> _OpenAssetForWrite(
+  [[nodiscard]] std::shared_ptr<PXR_NS::ArWritableAsset> _OpenAssetForWrite(
       const PXR_NS::ArResolvedPath &resolvedPath, WriteMode writeMode) const final;
 
  private:

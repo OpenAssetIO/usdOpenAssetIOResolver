@@ -1,0 +1,99 @@
+name: Code quality
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pylint:
+    name: Pylint
+    runs-on: ubuntu-20.04
+    container:
+      image: aswf/ci-vfxall:2022-clang13.1
+    strategy:
+      matrix:
+        config:
+          - os: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r resources/build/linter-requirements.txt
+          python -m pip install -r tests/requirements.txt
+
+      - name: Lint
+        uses: TheFoundryVisionmongers/fn-pylint-action@v1.1
+        with:
+          pylint-disable: fixme # We track 'todo's through other means
+          pylint-paths: >
+            tests
+  black:
+    runs-on: ubuntu-latest
+    name: Python formatting
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r resources/build/linter-requirements.txt
+      - name: Check Python formatting
+        run: black tests --check .
+
+  # Note: in order to keep an `actions/cache` cache up to date, we must
+  # use the approach detailed in
+  # https://github.com/actions/cache/blob/main/workarounds.md#update-a-cache
+  # i.e. load the most recently created cache that matches a prefix,
+  # then create an entirely new cache with every run.
+
+  cpp-linters:
+    name: C++ linters
+    runs-on: ubuntu-20.04
+    container:
+      image: aswf/ci-vfxall:2022-clang13.1
+    strategy:
+      matrix:
+        config:
+          - os: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache ccache cache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/ccache
+          key: ubuntu-20.04-ccache-lint-${{ github.run_id }}
+          restore-keys: ubuntu-20.04-ccache-lint-
+
+      - name: Install dependencies
+        # Configure the system and install library dependencies via
+        # conan packages.
+        run: |
+          python -m pip install -r resources/build/linter-requirements.txt
+          yum -y install ccache
+          clang-tidy --version
+          clang-format --version
+          cpplint --version
+      - name: Configure CMake build
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_CXX_COMPILER_LAUNCHER=/usr/bin/ccache
+          -DCMAKE_C_COMPILER_LAUNCHER=/usr/bin/ccache
+          --install-prefix ${{ github.workspace }}/dist
+          --preset lint
+
+      - name: Build and lint
+        run: |
+          /usr/bin/ccache -s
+          cmake --build build
+          /usr/bin/ccache -s
+        env:
+          CCACHE_DIR: /tmp/ccache
