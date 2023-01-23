@@ -1,0 +1,18 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UsdOpenAssetIOResolver": {
+                        "bases": [
+                            "ArResolver"
+                        ]
+                    }
+                }
+            },
+            "LibraryPath": "../libusdOpenAssetIOResolver.so",
+            "Name": "usdOpenAssetIOResolver",
+            "Type": "library"
+        }
+    ]
+}
