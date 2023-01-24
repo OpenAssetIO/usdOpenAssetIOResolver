@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "ParkingLot_Floor_1" (
+        references = @bal:///floor@</ParkingLot_Floor>
+    )
+    {
+    }
+}
+
