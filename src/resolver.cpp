@@ -3,18 +3,21 @@
 
 #include "resolver.h"
 
+#include <utility>
+
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/defaultResolver.h"
 #include "pxr/usd/ar/defineResolver.h"
 
+// NOLINTNEXTLINE
 PXR_NAMESPACE_USING_DIRECTIVE
 PXR_NAMESPACE_OPEN_SCOPE
 
-AR_DEFINE_RESOLVER(UsdOpenAssetIOResolver, ArResolver);
+AR_DEFINE_RESOLVER(UsdOpenAssetIOResolver, ArResolver)
 
-TF_DEBUG_CODES(OPENASSETIO_RESOLVER);
+TF_DEBUG_CODES(OPENASSETIO_RESOLVER)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
@@ -105,8 +108,9 @@ bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolved
                                                   std::string *whyNot) const {
   auto result = ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
   TF_DEBUG(OPENASSETIO_RESOLVER)
-      .Msg("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME() + "\n  resolvedPath :" +
-           resolvedPath.GetPathString() + "\n  result: " + std::to_string(result) + "\n");
+      .Msg("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME() +
+           "\n  resolvedPath :" + resolvedPath.GetPathString() +
+           "\n  result: " + std::to_string(static_cast<int>(result)) + "\n");
   return result;
 }
 
@@ -115,5 +119,5 @@ std::shared_ptr<ArWritableAsset> UsdOpenAssetIOResolver::_OpenAssetForWrite(
   TF_DEBUG(OPENASSETIO_RESOLVER)
       .Msg("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME() +
            "\n  resolvedPath :" + resolvedPath.GetPathString() + "\n");
-  return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, std::move(writeMode));
+  return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, writeMode);
 }

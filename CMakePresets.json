@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "lint",
+      "cacheVariables": {
+        "OPENASSETIO_USDRESOLVER_ENABLE_CLANG_FORMAT": "ON",
+        "OPENASSETIO_USDRESOLVER_ENABLE_CLANG_TIDY": "ON",
+        "OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT": "ON",
+        "OPENASSETIO_USDRESOLVER_WARNINGS_AS_ERRORS": "ON"
+      }
+    }
+  ]
+}

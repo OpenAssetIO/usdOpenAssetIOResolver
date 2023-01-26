@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The Foundry Visionmongers Ltd
 
-# pylint: disable=no-self-use
-# pylint: disable=invalid-name,redefined-outer-name
-# pylint: disable=missing-class-docstring,missing-function-docstring
+# pylint: disable=no-member
+# pylint: disable=wrong-import-position,unused-import
+# pylint: disable=missing-function-docstring,missing-module-docstring
 
-import pytest
 import os
+import pytest
 
 # This environment var must be set before the usd imports.
 os.environ["TF_DEBUG"] = "OPENASSETIO_RESOLVER"
-from pxr import Plug, Usd
+from pxr import Usd
 
 
 def test_open_stage_and_logging(capfd):
-    stage = Usd.Stage.Open("resources/empty_shot.usda")
+    Usd.Stage.Open("resources/empty_shot.usda")
     captured = capfd.readouterr()
 
     outputs = captured.out.split(os.environ["TF_DEBUG"])
