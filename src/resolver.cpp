@@ -3,8 +3,6 @@
 
 #include "resolver.h"
 
-#include <utility>
-
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/ar/assetInfo.h>
@@ -12,9 +10,11 @@
 #include <pxr/usd/ar/defineResolver.h>
 
 #include <openassetio/hostApi/HostInterface.hpp>
+#include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
 #include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
 #include <openassetio/log/LoggerInterface.hpp>
+#include <openassetio/log/SeverityFilter.hpp>
 #include <openassetio/python/hostApi.hpp>
 
 // NOLINTNEXTLINE
@@ -71,15 +71,28 @@ class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
 // ------------------------------------------------------------
 /* Ar Resolver Implementation */
 UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
-  const auto logger = std::make_shared<UsdOpenAssetIOResolverLogger>();
+  logger_ =
+      openassetio::log::SeverityFilter::make(std::make_shared<UsdOpenAssetIOResolverLogger>());
+
+  // TODO(DF): Remove after testing. Do something cleverer.
+  static_cast<openassetio::log::SeverityFilter &>(*logger_).setSeverity(
+      openassetio::log::LoggerInterface::Severity::kDebugApi);
 
   auto managerImplementationFactory =
-      openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(logger);
+      openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(logger_);
 
   const auto hostInterface = std::make_shared<UsdOpenAssetIOHostInterface>();
 
   manager_ = openassetio::hostApi::ManagerFactory::defaultManagerForInterface(
-      hostInterface, managerImplementationFactory, logger);
+      hostInterface, managerImplementationFactory, logger_);
+
+  if (!manager_) {
+    throw std::invalid_argument{
+        "OpenAssetIO manger plugin not found. Check OPENASSETIO_DEFAULT_CONFIG is set."};
+  }
+
+  // TODO(DF): Remove after testing.
+  logger_->debugApi(">>>>>>>>>>>>>>>>>>>> " + manager_->identifier());
 
   TF_DEBUG(OPENASSETIO_RESOLVER).Msg("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME() + "\n");
 }

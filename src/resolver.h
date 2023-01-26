@@ -10,6 +10,7 @@
 #include <openassetio/typedefs.hpp>
 
 OPENASSETIO_FWD_DECLARE(hostApi, Manager)
+OPENASSETIO_FWD_DECLARE(log, LoggerInterface)
 
 class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
  public:
@@ -48,5 +49,6 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
       const PXR_NS::ArResolvedPath &resolvedPath, WriteMode writeMode) const final;
 
  private:
+  openassetio::log::LoggerInterfacePtr logger_;
   openassetio::hostApi::ManagerPtr manager_;
 };
