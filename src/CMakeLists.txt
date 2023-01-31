@@ -2,7 +2,7 @@
 set(PLUGIN_NAME usdOpenAssetIOResolver)
 
 set(
-  SRC
+    SRC
     resolver.cpp
 )
 
@@ -12,38 +12,35 @@ add_library(${PLUGIN_NAME}
 )
 
 target_link_libraries(${PLUGIN_NAME}
-    PUBLIC
+    PRIVATE
     ar
+    OpenAssetIO::openassetio-core
+    OpenAssetIO::openassetio-python-bridge
 )
 
 #-----------------------------------------------------------------------
 # Activate warnings as errors, pedantic, etc.
-set_default_compiler_warnings(${PLUGIN_NAME})
+openassetio_usdresolver_set_default_target_properties(${PLUGIN_NAME})
 
-
-#-----------------------------------------------------------------------
-# Add static analysis dependencies
-if (OPENASSETIO_USDRESOLVER_ENABLE_CLANG_FORMAT)
-    add_dependencies(${PLUGIN_NAME} openassetio-clangformat)
-endif ()
-if (OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT)
-    add_dependencies(${PLUGIN_NAME} openassetio-cpplint)
-endif ()
+# ----------------------------------------------------------------------
+# Silence warnings about deprecation from USD itself
+# At time of writing, from : from USD/include/pxr/base/tf/hashset.h:39
+target_compile_options(${PLUGIN_NAME} PRIVATE -Wno-deprecated)
 
 #-----------------------------------------------------------------------
 # Main install
 install(
     TARGETS
-        ${PLUGIN_NAME}
+    ${PLUGIN_NAME}
     DESTINATION
-        .
+    .
 )
 
 #-----------------------------------------------------------------------
 # Install plugInfo.json
 install(
     FILES
-		resources/plugInfo.json
+	resources/plugInfo.json
     DESTINATION
-        ./resources
+    ./resources
 )

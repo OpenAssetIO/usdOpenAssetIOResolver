@@ -119,6 +119,12 @@ def openassetio_configured():
     ), "usdOpenAssetIOResolver plugin not loaded, please check PXR_PLUGINPATH_NAME env variable"
 
 
+# Log openassetio resolver messages
+@pytest.fixture(autouse=True)
+def enable_openassetio_logging_debug():
+    os.environ["OPENASSETIO_LOGGING_SEVERITY"] = "1"
+
+
 # As all the data tends to follow the same form, convenience method
 # to avoid repeating myself
 def assert_parking_lot_structure(usd_stage):

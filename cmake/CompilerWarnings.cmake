@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2013-2022 The Foundry Visionmongers Ltd
 
-function(set_default_compiler_warnings target_name)
+function(openassetio_usdresolver_set_default_compiler_warnings target_name)
 
     set(CLANG_WARNINGS
         -Wall
