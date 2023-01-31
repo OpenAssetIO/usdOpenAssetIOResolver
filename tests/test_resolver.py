@@ -21,7 +21,7 @@ from pxr import Plug, Usd, Ar
 # This test can be removed once the logging transforms, alchemy like,
 # into real functionality.
 def test_open_stage_and_logging(capfd):
-    Usd.Stage.Open("resources/empty_shot.usda")
+    open_stage("resources/empty_shot.usda")
     captured = capfd.readouterr()
 
     outputs = captured.out.split(os.environ["TF_DEBUG"])
