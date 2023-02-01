@@ -3,7 +3,7 @@
 def "ParkingLot"
 {
     def "ParkingLot_Floor_1" (
-        references = @bal:///floor@</ParkingLot_Floor>
+        references = @bal:///assetized_child_ref_non_assetized_grandchild/floor@</ParkingLot_Floor>
     )
     {
     }

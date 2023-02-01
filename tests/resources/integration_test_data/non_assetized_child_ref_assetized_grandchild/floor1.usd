@@ -2,12 +2,12 @@
 def "ParkingLot_Floor"
 {
     def "Car1" (
-        references = @bal:///car@</Car>
+        references = @bal:///non_assetized_child_ref_assetized_grandchild/car@</Car>
     )
     {
     }
     def "Car2" (
-        references = @bal:///car@</Car>
+        references = @bal:///non_assetized_child_ref_assetized_grandchild/car@</Car>
     )
     {
     }

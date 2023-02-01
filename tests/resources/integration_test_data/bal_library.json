@@ -1,0 +1,48 @@
+{
+    "entities": {
+        "assetized_child_ref_non_assetized_grandchild/floor": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "file://${TEST_DATA_ROOT}/assetized_child_ref_non_assetized_grandchild/floor1.usd"
+                        }
+                    }
+                }
+            ]
+        },
+        "non_assetized_child_ref_assetized_grandchild/car": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "file://${TEST_DATA_ROOT}/non_assetized_child_ref_assetized_grandchild/car.usd"
+                        }
+                    }
+                }
+            ]
+        },
+        "recursive_assetized_resolve/floor": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "file://${TEST_DATA_ROOT}/recursive_assetized_resolve/floors/floor1.usd"
+                        }
+                    }
+                }
+            ]
+        },
+        "recursive_assetized_resolve/car": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "file://${TEST_DATA_ROOT}/recursive_assetized_resolve/cars/car.usd"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
