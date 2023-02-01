@@ -7,6 +7,11 @@
 
 #include <pxr/usd/ar/defaultResolver.h>
 
+#include <openassetio/typedefs.hpp>
+
+OPENASSETIO_FWD_DECLARE(hostApi, Manager)
+OPENASSETIO_FWD_DECLARE(log, LoggerInterface)
+
 class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
  public:
   UsdOpenAssetIOResolver();
@@ -44,4 +49,8 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
       const PXR_NS::ArResolvedPath &resolvedPath, WriteMode writeMode) const final;
 
  private:
+  /// OpenAssetIO Logger. Uses TF Log/Error functions.
+  openassetio::log::LoggerInterfacePtr logger_;
+  /// OpenAssetIO Manager. Initialised on construction.
+  openassetio::hostApi::ManagerPtr manager_;
 };

@@ -21,7 +21,7 @@ from pxr import Plug, Usd, Ar
 # This test can be removed once the logging transforms, alchemy like,
 # into real functionality.
 def test_open_stage_and_logging(capfd):
-    Usd.Stage.Open("resources/empty_shot.usda")
+    open_stage("resources/empty_shot.usda")
     captured = capfd.readouterr()
 
     outputs = captured.out.split(os.environ["TF_DEBUG"])
@@ -117,6 +117,12 @@ def openassetio_configured():
     assert (
         plugin is not None
     ), "usdOpenAssetIOResolver plugin not loaded, please check PXR_PLUGINPATH_NAME env variable"
+
+
+# Log openassetio resolver messages
+@pytest.fixture(autouse=True)
+def enable_openassetio_logging_debug():
+    os.environ["OPENASSETIO_LOGGING_SEVERITY"] = "1"
 
 
 # As all the data tends to follow the same form, convenience method

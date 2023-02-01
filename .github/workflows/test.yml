@@ -11,24 +11,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-openassetio:
+    name: Build OpenAssetIO
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openassetio/openassetio-build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/build_openassetio
+
   test:
     name: Test-Resolver
     runs-on: ubuntu-latest
+    needs: build-openassetio
     container:
       image: aswf/ci-vfxall:2022-clang13.1
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build and install (Docker)
-        run: >
-          cmake -S . -B build &&
-          cmake --build build &&
+      - name: Get OpenAssetIO
+        uses: actions/download-artifact@v3
+        with:
+          name: OpenAssetIO Build
+          path: ./openassetio-build
+
+      - name: Build and install Resolver
+        run: |
+          cmake -S . -DCMAKE_PREFIX_PATH="./openassetio-build" -B build
+          cmake --build build
           cmake --install build
 
       - run: |
           python -m pip install -r tests/requirements.txt
 
+        # PYTHONPATH here is extended with `/usr/local/lib/python`
+        # because the USD install on this docker container is odd, and
+        # stores the `pxr` lib in that space, whilst the regular python
+        # libraries are contained at /usr/local/lib/python3.9,
+        # (which is already on the pythonpath)
+        #
+        # LD_LIBRARY_PATH doesn't have /usr/local/lib on it by default
+        # like you might expect because we're running as root, so we
+        # just append it (it's so we can find python itself.)
       - name: Test
-        run: >
+        run: |
+          export PXR_PLUGINPATH_NAME=$GITHUB_WORKSPACE/build/dist/resources/plugInfo.json
+          export LD_LIBRARY_PATH=/usr/local/lib:$GITHUB_WORKSPACE/openassetio-build/lib64
+          export OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio.conf
+          export PYTHONPATH=/usr/local/lib/python/:$GITHUB_WORKSPACE/openassetio-build/lib/python3.9/site-packages
           cd tests
           python -m pytest . -v

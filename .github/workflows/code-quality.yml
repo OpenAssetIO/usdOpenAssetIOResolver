@@ -11,10 +11,6 @@ jobs:
     runs-on: ubuntu-20.04
     container:
       image: aswf/ci-vfxall:2022-clang13.1
-    strategy:
-      matrix:
-        config:
-          - os: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
 
@@ -48,15 +44,20 @@ jobs:
       - name: Check Python formatting
         run: black tests --check .
 
-  # Note: in order to keep an `actions/cache` cache up to date, we must
-  # use the approach detailed in
-  # https://github.com/actions/cache/blob/main/workarounds.md#update-a-cache
-  # i.e. load the most recently created cache that matches a prefix,
-  # then create an entirely new cache with every run.
+  build-openassetio:
+    name: Build OpenAssetIO
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openassetio/openassetio-build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/build_openassetio
 
   cpp-linters:
     name: C++ linters
     runs-on: ubuntu-20.04
+    needs: build-openassetio
     container:
       image: aswf/ci-vfxall:2022-clang13.1
     strategy:
@@ -66,34 +67,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Cache ccache cache
-        uses: actions/cache@v3
-        with:
-          path: /tmp/ccache
-          key: ubuntu-20.04-ccache-lint-${{ github.run_id }}
-          restore-keys: ubuntu-20.04-ccache-lint-
-
       - name: Install dependencies
         # Configure the system and install library dependencies via
         # conan packages.
         run: |
           python -m pip install -r resources/build/linter-requirements.txt
-          yum -y install ccache
           clang-tidy --version
           clang-format --version
           cpplint --version
+
+      - name: Get OpenAssetIO
+        uses: actions/download-artifact@v3
+        with:
+          name: OpenAssetIO Build
+          path: ./openassetio-build
+
       - name: Configure CMake build
         run: >
-          cmake -S . -B build -G Ninja
-          -DCMAKE_CXX_COMPILER_LAUNCHER=/usr/bin/ccache
-          -DCMAKE_C_COMPILER_LAUNCHER=/usr/bin/ccache
+          cmake -DCMAKE_PREFIX_PATH="./openassetio-build" -S . -B build -G Ninja
           --install-prefix ${{ github.workspace }}/dist
           --preset lint
 
       - name: Build and lint
         run: |
-          /usr/bin/ccache -s
           cmake --build build
-          /usr/bin/ccache -s
-        env:
-          CCACHE_DIR: /tmp/ccache
