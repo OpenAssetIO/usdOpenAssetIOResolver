@@ -114,7 +114,7 @@ Ref locationInManagerContextForEntity(const openassetio::hostApi::ManagerPtr &ma
           // Error callback.
           // TODO(DF): Better conversion of BatchElementError to
           //  appropriate exception type.
-          std::string errorMsg = "OpenAssetIO error code ";
+          std::string errorMsg = "error code ";
           errorMsg += std::to_string(static_cast<int>(error.code));
           errorMsg += ": ";
           errorMsg += error.message;
@@ -136,14 +136,58 @@ Ref locationInManagerContextForEntity(const openassetio::hostApi::ManagerPtr &ma
   return assetPath;
 }
 
+/**
+ * Decorator to stop propagation of all exceptions.
+ *
+ * Exceptions occurring within the wrapped callable will be caught and
+ * logged, and a default-constructed value (of the same type as the
+ * callable's return type) returned instead of propagating the
+ * exception.
+ *
+ * The callable must take no arguments (but may return a value).
+ *
+ * This is needed since USD reacts badly if an exception escapes an Ar
+ * plugin (segfault, sigabrt).
+ *
+ * @tparam Fn Callable type.
+ * @param fn Callable instance.
+ * @param logger OpenAssetIO logger to log exception messages.
+ * @param name Name of function/process that caused the exception, to
+ * append to log messages.
+ * @return Result of callable if no exception occurred, otherwise a
+ * default-constructed object.
+ */
+template <typename Fn>
+auto catchAndLogExceptions(Fn &&fn, const openassetio::log::LoggerInterfacePtr &logger,
+                           const std::string_view name) {
+  try {
+    return fn();
+  } catch (const std::exception &exc) {
+    std::string msg = "OpenAssetIO error in ";
+    msg += name;
+    msg += ": ";
+    msg += exc.what();
+    logger->critical(msg);
+  } catch (...) {
+    std::string msg = "OpenAssetIO error in ";
+    msg += name;
+    msg += ": unknown non-exception type caught";
+    logger->critical(msg);
+  }
+  return std::invoke_result_t<Fn>{};
+}
 }  // namespace
 
 // ------------------------------------------------------------
 /* Ar Resolver Implementation */
 UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
+  // Note: it is safe to throw exceptions from the constructor. USD will
+  // error gracefully, unlike exceptions from other member functions,
+  // which can cause a segfault/sigabrt.
+  // TODO(DF): Add a test for exceptions happening here.
+
   logger_ =
       openassetio::log::SeverityFilter::make(std::make_shared<UsdOpenAssetIOResolverLogger>());
-
   auto managerImplementationFactory =
       openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(logger_);
 
@@ -171,35 +215,41 @@ UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() {
 
 std::string UsdOpenAssetIOResolver::_CreateIdentifier(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
-  std::string identifier;
+  const std::string fnName = TF_FUNC_NAME();
+  return catchAndLogExceptions(
+      [&] {
+        std::string identifier;
 
-  if (manager_->isEntityReferenceString(assetPath)) {
-    // If assetPath is an entity reference we must preserve it
-    // unmodified as the "identifier", since it'll be passed to
-    // subsequent member functions.  We assume it will (eventually)
-    // resolve to an absolute path, making the anchorAssetPath redundant
-    // (for now).
-    // TODO(DF): Allow the manager to provide an identifier representing
-    //  an "anchored" entity reference.
-    identifier = assetPath;
-  } else {
-    identifier = ArDefaultResolver::_CreateIdentifier(
-        assetPath, locationInManagerContextForEntity(manager_, readContext_, anchorAssetPath));
-  }
+        if (manager_->isEntityReferenceString(assetPath)) {
+          // If assetPath is an entity reference we must preserve it
+          // unmodified as the "identifier", since it'll be passed to
+          // subsequent member functions.  We assume it will (eventually)
+          // resolve to an absolute path, making the anchorAssetPath redundant
+          // (for now).
+          // TODO(DF): Allow the manager to provide an identifier representing
+          //  an "anchored" entity reference.
+          identifier = assetPath;
+        } else {
+          identifier = ArDefaultResolver::_CreateIdentifier(
+              assetPath,
+              locationInManagerContextForEntity(manager_, readContext_, anchorAssetPath));
+        }
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
-  logger_->debug("  result: " + identifier);
+        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
+        logger_->debug("  assetPath: " + assetPath);
+        logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
+        logger_->debug("  result: " + identifier);
 
-  return identifier;
+        return identifier;
+      },
+      logger_, fnName);
 }
 
 // TODO(DF): Implement for publishing workflow.
 std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
   auto result = ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
+  logger_->debug(TF_FUNC_NAME());
 
   logger_->debug("  assetPath: " + assetPath);
   logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
@@ -209,20 +259,25 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
 }
 
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
-  ArResolvedPath result;
-  if (manager_->isEntityReferenceString(assetPath)) {
-    // TODO(DF): We may wish to do more here, e.g.
-    //  `finalizedEntityVersion()`
-    result = ArResolvedPath{assetPath};
-  } else {
-    result = ArDefaultResolver::_Resolve(assetPath);
-  }
+  const std::string fnName = TF_FUNC_NAME();
+  return catchAndLogExceptions(
+      [&] {
+        ArResolvedPath result;
+        if (manager_->isEntityReferenceString(assetPath)) {
+          // TODO(DF): We may wish to do more here, e.g.
+          //  `finalizedEntityVersion()`
+          result = ArResolvedPath{assetPath};
+        } else {
+          result = ArDefaultResolver::_Resolve(assetPath);
+        }
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  result: " + result.GetPathString());
+        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
+        logger_->debug("  assetPath: " + assetPath);
+        logger_->debug("  result: " + result.GetPathString());
 
-  return result;
+        return result;
+      },
+      logger_, fnName);
 }
 
 // TODO(DF): Implement for publishing workflow.
@@ -238,15 +293,20 @@ ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &as
 
 /* Asset Operations*/
 std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) const {
-  // TODO(DF): Give the manager a chance to provide the file extension.
-  auto result = ArDefaultResolver::_GetExtension(
-      locationInManagerContextForEntity(manager_, readContext_, assetPath));
+  const std::string fnName = TF_FUNC_NAME();
+  return catchAndLogExceptions(
+      [&] {
+        // TODO(DF): Give the manager a chance to provide the file extension.
+        auto result = ArDefaultResolver::_GetExtension(
+            locationInManagerContextForEntity(manager_, readContext_, assetPath));
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  result: " + result);
+        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
+        logger_->debug("  assetPath: " + assetPath);
+        logger_->debug("  result: " + result);
 
-  return result;
+        return result;
+      },
+      logger_, fnName);
 }
 
 ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
@@ -267,31 +327,41 @@ ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
 
 ArTimestamp UsdOpenAssetIOResolver::_GetModificationTimestamp(
     const std::string &assetPath, const ArResolvedPath &resolvedPath) const {
-  ArTimestamp result;
-  if (manager_->isEntityReferenceString(assetPath)) {
-    // Deliberately use a valid fixed timestamp, which will force caching
-    // until we implement a more considered method.
-    // TODO(DF): Consider how best to handle this via OpenAssetIO.
-    result = ArTimestamp{0};
-  } else {
-    result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
-  }
+  const std::string fnName = TF_FUNC_NAME();
+  return catchAndLogExceptions(
+      [&] {
+        ArTimestamp result;
+        if (manager_->isEntityReferenceString(assetPath)) {
+          // Deliberately use a valid fixed timestamp, which will force caching
+          // until we implement a more considered method.
+          // TODO(DF): Consider how best to handle this via OpenAssetIO.
+          result = ArTimestamp{0};
+        } else {
+          result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
+        }
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
-  logger_->debug("  result: " + std::to_string(result.GetTime()));
+        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
+        logger_->debug("  assetPath: " + assetPath);
+        logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
+        logger_->debug("  result: " + std::to_string(result.GetTime()));
 
-  return result;
+        return result;
+      },
+      logger_, fnName);
 }
 
 std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
     const ArResolvedPath &resolvedPath) const {
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
+  const std::string fnName = TF_FUNC_NAME();
+  return catchAndLogExceptions(
+      [&] {
+        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
+        logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
 
-  return ArDefaultResolver::_OpenAsset(
-      locationInManagerContextForEntity(manager_, readContext_, resolvedPath));
+        return ArDefaultResolver::_OpenAsset(
+            locationInManagerContextForEntity(manager_, readContext_, resolvedPath));
+      },
+      logger_, fnName);
 }
 
 // TODO(DF): Implement for publishing workflow.
