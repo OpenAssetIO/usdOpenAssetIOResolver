@@ -26,15 +26,22 @@ def test_open_stage_and_logging(capfd):
     open_stage("resources/empty_shot.usda")
     captured = capfd.readouterr()
 
-    outputs = captured.out.split(os.environ["TF_DEBUG"])
-    assert "UsdOpenAssetIOResolver::UsdOpenAssetIOResolver" in outputs[1]
+    outputs = captured.out.split("UsdOpenAssetIOResolver::")
+    assert "UsdOpenAssetIOResolver" in outputs[1]
     assert "_CreateIdentifier" in outputs[2]
+    assert "result" in outputs[2]
     assert "_Resolve" in outputs[3]
+    assert "result" in outputs[3]
     assert "_GetExtension" in outputs[4]
+    assert "result" in outputs[4]
     assert "_GetAssetInfo" in outputs[5]
+    assert "result" in outputs[5]
     assert "_OpenAsset" in outputs[6]
+    assert "result" in outputs[6]
     assert "_GetModificationTimestamp" in outputs[7]
+    assert "result" in outputs[7]
     assert "_GetExtension" in outputs[8]
+    assert "result" in outputs[8]
 
 
 # Given a USD document that references an asset via a direct relative

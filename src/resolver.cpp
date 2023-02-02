@@ -3,6 +3,8 @@
 
 #include "resolver.h"
 
+#include <sstream>
+#include <thread>
 #include <utility>
 
 #include <pxr/base/tf/debug.h>
@@ -206,17 +208,23 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
   readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead,
                                             openassetio::Context::Retention::kTransient);
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
+  logger_->debug(TF_FUNC_NAME());
 }
 
-UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() {
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-}
+UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() { logger_->debug(TF_FUNC_NAME()); }
 
 std::string UsdOpenAssetIOResolver::_CreateIdentifier(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
   const std::string fnName = TF_FUNC_NAME();
-  return catchAndLogExceptions(
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  assetPath: " << assetPath
+           << "\n  anchorAssetPath: " << anchorAssetPath.GetPathString();
+    logger_->debug(logMsg.str());
+  }
+
+  auto result = catchAndLogExceptions(
       [&] {
         std::string identifier;
 
@@ -235,14 +243,17 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
               locationInManagerContextForEntity(manager_, readContext_, anchorAssetPath));
         }
 
-        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
-        logger_->debug("  assetPath: " + assetPath);
-        logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
-        logger_->debug("  result: " + identifier);
-
         return identifier;
       },
       logger_, fnName);
+
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "result: " << result;
+    logger_->debug(logMsg.str());
+  }
+  return result;
 }
 
 // TODO(DF): Implement for publishing workflow.
@@ -260,31 +271,39 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
 
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
   const std::string fnName = TF_FUNC_NAME();
-  return catchAndLogExceptions(
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  assetPath: " << assetPath;
+    logger_->debug(logMsg.str());
+  }
+
+  auto result = catchAndLogExceptions(
       [&] {
-        ArResolvedPath result;
         if (manager_->isEntityReferenceString(assetPath)) {
           // TODO(DF): We may wish to do more here, e.g.
           //  `finalizedEntityVersion()`
-          result = ArResolvedPath{assetPath};
-        } else {
-          result = ArDefaultResolver::_Resolve(assetPath);
+          return ArResolvedPath{assetPath};
         }
-
-        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
-        logger_->debug("  assetPath: " + assetPath);
-        logger_->debug("  result: " + result.GetPathString());
-
-        return result;
+        return ArDefaultResolver::_Resolve(assetPath);
       },
       logger_, fnName);
+
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "result: " << result.GetPathString();
+    logger_->debug(logMsg.str());
+  }
+
+  return result;
 }
 
 // TODO(DF): Implement for publishing workflow.
 ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &assetPath) const {
   auto result = ArDefaultResolver::_ResolveForNewAsset(assetPath);
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
+  logger_->debug(TF_FUNC_NAME());
   logger_->debug("  assetPath: " + assetPath);
   logger_->debug("  result: " + result.GetPathString());
 
@@ -294,33 +313,53 @@ ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &as
 /* Asset Operations*/
 std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) const {
   const std::string fnName = TF_FUNC_NAME();
-  return catchAndLogExceptions(
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  assetPath: " << assetPath;
+    logger_->debug(logMsg.str());
+  }
+
+  auto result = catchAndLogExceptions(
       [&] {
         // TODO(DF): Give the manager a chance to provide the file extension.
-        auto result = ArDefaultResolver::_GetExtension(
+        return ArDefaultResolver::_GetExtension(
             locationInManagerContextForEntity(manager_, readContext_, assetPath));
-
-        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
-        logger_->debug("  assetPath: " + assetPath);
-        logger_->debug("  result: " + result);
-
-        return result;
       },
       logger_, fnName);
+
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "result: " << result;
+    logger_->debug(logMsg.str());
+  }
+
+  return result;
 }
 
 ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
                                                   const ArResolvedPath &resolvedPath) const {
+  const std::string fnName = TF_FUNC_NAME();
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  assetPath: " << assetPath
+           << "\n  resolvedPath: " << resolvedPath.GetPathString();
+    logger_->debug(logMsg.str());
+  }
   // TODO(DF): Determine if there is value in supporting this via the
   //  manager, including any useful data that can be stuffed into the
   //  generic `resolverInfo` VtValue member.
   auto result = ArDefaultResolver::_GetAssetInfo(assetPath, resolvedPath);
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
-  logger_->debug("  result(assetName): " + result.assetName);
-  logger_->debug("  result(repoPath): " + result.repoPath);
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "\n  result.assetName: " << result.assetName
+           << "\n  result.repoPath: " << result.repoPath;
+    logger_->debug(logMsg.str());
+  }
 
   return result;
 }
@@ -328,40 +367,60 @@ ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
 ArTimestamp UsdOpenAssetIOResolver::_GetModificationTimestamp(
     const std::string &assetPath, const ArResolvedPath &resolvedPath) const {
   const std::string fnName = TF_FUNC_NAME();
-  return catchAndLogExceptions(
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  assetPath: " << assetPath
+           << "\n  resolvedPath: " << resolvedPath.GetPathString();
+    logger_->debug(logMsg.str());
+  }
+
+  auto result = catchAndLogExceptions(
       [&] {
-        ArTimestamp result;
         if (manager_->isEntityReferenceString(assetPath)) {
           // Deliberately use a valid fixed timestamp, which will force caching
           // until we implement a more considered method.
           // TODO(DF): Consider how best to handle this via OpenAssetIO.
-          result = ArTimestamp{0};
-        } else {
-          result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
+          return ArTimestamp{0};
         }
-
-        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
-        logger_->debug("  assetPath: " + assetPath);
-        logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
-        logger_->debug("  result: " + std::to_string(result.GetTime()));
-
-        return result;
+        return ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
       },
       logger_, fnName);
+
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "result: " << result.GetTime();
+    logger_->debug(logMsg.str());
+  }
+
+  return result;
 }
 
 std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
     const ArResolvedPath &resolvedPath) const {
   const std::string fnName = TF_FUNC_NAME();
-  return catchAndLogExceptions(
-      [&] {
-        logger_->debug("OPENASSETIO_RESOLVER: " + fnName);
-        logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
+           << "\n  resolvedPath: " << resolvedPath.GetPathString();
+    logger_->debug(logMsg.str());
+  }
 
+  auto result = catchAndLogExceptions(
+      [&] {
         return ArDefaultResolver::_OpenAsset(
             locationInManagerContextForEntity(manager_, readContext_, resolvedPath));
       },
       logger_, fnName);
+
+  {
+    std::ostringstream logMsg;
+    logMsg << "[tid=" << std::this_thread::get_id() << "] "
+           << "result: " << result.get();
+    logger_->debug(logMsg.str());
+  }
+  return result;
 }
 
 // TODO(DF): Implement for publishing workflow.
@@ -369,7 +428,7 @@ bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolved
                                                   std::string *whyNot) const {
   auto result = ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
 
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
+  logger_->debug(TF_FUNC_NAME());
   logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
   logger_->debug("  result: " + std::to_string(static_cast<int>(result)));
 
@@ -379,7 +438,7 @@ bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolved
 // TODO(DF): Implement for publishing workflow.
 std::shared_ptr<ArWritableAsset> UsdOpenAssetIOResolver::_OpenAssetForWrite(
     const ArResolvedPath &resolvedPath, WriteMode writeMode) const {
-  logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
+  logger_->debug(TF_FUNC_NAME());
   logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
 
   return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, writeMode);
