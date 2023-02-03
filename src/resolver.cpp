@@ -3,12 +3,16 @@
 
 #include "resolver.h"
 
+#include <utility>
+
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/ar/assetInfo.h>
 #include <pxr/usd/ar/defaultResolver.h>
 #include <pxr/usd/ar/defineResolver.h>
 
+#include <openassetio/Context.hpp>
+#include <openassetio/TraitsData.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
@@ -66,6 +70,72 @@ class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
     return "OpenAssetIO USD Resolver";
   }
 };
+
+// TODO(DF): Replace with C++ trait views, once they exist.
+const openassetio::trait::TraitId kLocateableContentTraitId =  // NOLINT
+    "openassetio-mediacreation:content.LocatableContent";
+const openassetio::trait::property::Key kLocateableContentLocationPropertyKey =  // NOLINT
+    "location";
+
+/**
+ * Retrieve the resolved file path of an entity reference.
+ *
+ * If the given `assetPath` is not an entity reference, assume it's
+ * already a path and pass through unmodified.
+ *
+ * Otherwise, resolve the "locateableContent" trait of the entity and
+ * return the "location" property of it, converted from a URL to a
+ * posix file path.
+ *
+ * @param manager OpenAssetIO manager plugin wrapper.
+ * @param context OpenAssetIO calling context.
+ * @param assetPath String-like asset path that may or may not be an
+ * entity reference.
+ * @return Resolved file path if `assetPath` is an entity reference,
+ * `assetPath` otherwise.
+ */
+template <typename Ref>
+Ref locationInManagerContextForEntity(const openassetio::hostApi::ManagerPtr &manager,
+                                      const openassetio::ContextConstPtr &context, Ref assetPath) {
+  // Check if the assetPath is an OpenAssetIO entity reference.
+  if (auto maybeEntityReference = manager->createEntityReferenceIfValid(assetPath)) {
+    openassetio::TraitsDataPtr traitsData;
+
+    // Resolve the locateableContent trait in order to get the
+    // (absolute) path to the asset.
+    manager->resolve(
+        {std::move(*maybeEntityReference)}, {kLocateableContentTraitId}, context,
+        [&traitsData]([[maybe_unused]] std::size_t idx,
+                      const openassetio::TraitsDataPtr &resolvedTraitsData) {
+          // Success callback.
+          traitsData = resolvedTraitsData;
+        },
+        []([[maybe_unused]] std::size_t idx, const openassetio::BatchElementError &error) {
+          // Error callback.
+          // TODO(DF): Better conversion of BatchElementError to
+          //  appropriate exception type.
+          std::string errorMsg = "OpenAssetIO error code ";
+          errorMsg += std::to_string(static_cast<int>(error.code));
+          errorMsg += ": ";
+          errorMsg += error.message;
+          throw std::runtime_error{errorMsg};
+        });
+
+    if (openassetio::trait::property::Value propValue; traitsData->getTraitProperty(
+            &propValue, kLocateableContentTraitId, kLocateableContentLocationPropertyKey)) {
+      // We've successfully got the locateableContent trait for the
+      // entity.
+      static constexpr std::size_t kProtocolSize = std::string_view{"file://"}.size();
+      return Ref{std::get<openassetio::Str>(propValue).substr(kProtocolSize)};
+    }
+    // TODO(DF): Here we fall through to returning `assetPath` verbatim
+    //  if the "locateableContent" trait isn't found. We need to
+    //  consider if this is the correct thing to do.
+  }
+
+  return assetPath;
+}
+
 }  // namespace
 
 // ------------------------------------------------------------
@@ -88,6 +158,10 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
         openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
   }
 
+  // TODO(DF): Set appropriate locale.
+  readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead,
+                                            openassetio::Context::Retention::kTransient);
+
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
 }
 
@@ -97,16 +171,31 @@ UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() {
 
 std::string UsdOpenAssetIOResolver::_CreateIdentifier(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
-  auto result = ArDefaultResolver::_CreateIdentifier(assetPath, anchorAssetPath);
+  std::string identifier;
+
+  if (manager_->isEntityReferenceString(assetPath)) {
+    // If assetPath is an entity reference we must preserve it
+    // unmodified as the "identifier", since it'll be passed to
+    // subsequent member functions.  We assume it will (eventually)
+    // resolve to an absolute path, making the anchorAssetPath redundant
+    // (for now).
+    // TODO(DF): Allow the manager to provide an identifier representing
+    //  an "anchored" entity reference.
+    identifier = assetPath;
+  } else {
+    identifier = ArDefaultResolver::_CreateIdentifier(
+        assetPath, locationInManagerContextForEntity(manager_, readContext_, anchorAssetPath));
+  }
 
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
   logger_->debug("  assetPath: " + assetPath);
   logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
-  logger_->debug("  result: " + result);
+  logger_->debug("  result: " + identifier);
 
-  return result;
+  return identifier;
 }
 
+// TODO(DF): Implement for publishing workflow.
 std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
   auto result = ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
@@ -120,7 +209,14 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
 }
 
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
-  auto result = ArDefaultResolver::_Resolve(assetPath);
+  ArResolvedPath result;
+  if (manager_->isEntityReferenceString(assetPath)) {
+    // TODO(DF): We may wish to do more here, e.g.
+    //  `finalizedEntityVersion()`
+    result = ArResolvedPath{assetPath};
+  } else {
+    result = ArDefaultResolver::_Resolve(assetPath);
+  }
 
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
   logger_->debug("  assetPath: " + assetPath);
@@ -129,6 +225,7 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
   return result;
 }
 
+// TODO(DF): Implement for publishing workflow.
 ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &assetPath) const {
   auto result = ArDefaultResolver::_ResolveForNewAsset(assetPath);
 
@@ -141,7 +238,9 @@ ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &as
 
 /* Asset Operations*/
 std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) const {
-  auto result = ArDefaultResolver::_GetExtension(assetPath);
+  // TODO(DF): Give the manager a chance to provide the file extension.
+  auto result = ArDefaultResolver::_GetExtension(
+      locationInManagerContextForEntity(manager_, readContext_, assetPath));
 
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
   logger_->debug("  assetPath: " + assetPath);
@@ -152,6 +251,9 @@ std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) 
 
 ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
                                                   const ArResolvedPath &resolvedPath) const {
+  // TODO(DF): Determine if there is value in supporting this via the
+  //  manager, including any useful data that can be stuffed into the
+  //  generic `resolverInfo` VtValue member.
   auto result = ArDefaultResolver::_GetAssetInfo(assetPath, resolvedPath);
 
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
@@ -165,7 +267,15 @@ ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
 
 ArTimestamp UsdOpenAssetIOResolver::_GetModificationTimestamp(
     const std::string &assetPath, const ArResolvedPath &resolvedPath) const {
-  auto result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
+  ArTimestamp result;
+  if (manager_->isEntityReferenceString(assetPath)) {
+    // Deliberately use a valid fixed timestamp, which will force caching
+    // until we implement a more considered method.
+    // TODO(DF): Consider how best to handle this via OpenAssetIO.
+    result = ArTimestamp{0};
+  } else {
+    result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
+  }
 
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
   logger_->debug("  assetPath: " + assetPath);
@@ -180,9 +290,11 @@ std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());
   logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
 
-  return ArDefaultResolver::_OpenAsset(resolvedPath);
+  return ArDefaultResolver::_OpenAsset(
+      locationInManagerContextForEntity(manager_, readContext_, resolvedPath));
 }
 
+// TODO(DF): Implement for publishing workflow.
 bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolvedPath,
                                                   std::string *whyNot) const {
   auto result = ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
@@ -194,6 +306,7 @@ bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolved
   return result;
 }
 
+// TODO(DF): Implement for publishing workflow.
 std::shared_ptr<ArWritableAsset> UsdOpenAssetIOResolver::_OpenAssetForWrite(
     const ArResolvedPath &resolvedPath, WriteMode writeMode) const {
   logger_->debug("OPENASSETIO_RESOLVER: " + TF_FUNC_NAME());

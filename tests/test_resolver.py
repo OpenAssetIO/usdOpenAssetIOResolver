@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The Foundry Visionmongers Ltd
 
-# pylint: disable=no-member
+# pylint: disable=no-member,redefined-outer-name
 # pylint: disable=wrong-import-position,unused-import
 # pylint: disable=missing-function-docstring,missing-module-docstring
 
@@ -16,6 +16,8 @@ from pxr import Plug, Usd, Ar
 # Assume OpenAssetIO is configured as the custom primary resolver for
 # all tests. If you're wondering where this is configured, it may
 # just be set via the `PXR_PLUGINPATH_NAME` environment variable.
+
+# TODO(DF): More tests for error cases.
 
 
 # This test can be removed once the logging transforms, alchemy like,
@@ -38,7 +40,6 @@ def test_open_stage_and_logging(capfd):
 # Given a USD document that references an asset via a direct relative
 # file path, then the asset is resolved to the file path as expected.
 def test_openassetio_resolver_has_no_effect_with_no_search_path():
-
     stage = open_stage(
         "resources/integration_test_data/resolver_has_no_effect_with_no_search_path/parking_lot.usd"
     )
@@ -50,7 +51,6 @@ def test_openassetio_resolver_has_no_effect_with_no_search_path():
 # search-path based file path, then the asset is resolved to the file
 # path as expected.
 def test_openassetio_resolver_has_no_effect_with_search_path():
-
     context = build_search_path_context(
         "resources/integration_test_data/resolver_has_no_effect_with_search_path/search_path_root"
     )
@@ -67,7 +67,6 @@ def test_openassetio_resolver_has_no_effect_with_search_path():
 # level document containing an assetized reference resolvable by
 # OpenAssetIO to a third level document, and that the resolved paths
 # are search path based, then the document can be fully resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_recursive_assetized_resolve():
     stage = open_stage(
         "resources/integration_test_data/recursive_assetized_resolve/parking_lot.usd"
@@ -81,7 +80,6 @@ def test_recursive_assetized_resolve():
 # document containing a non-assetized, adjacent relative file path
 # reference to a third level document, then the document can be fully
 # resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_assetized_child_ref_non_assetized_grandchild():
     stage = open_stage(
         "resources/integration_test_data"
@@ -96,7 +94,6 @@ def test_assetized_child_ref_non_assetized_grandchild():
 # level document containing an assetized reference resolvable by
 # OpenAssetIO to a third level document, then the document can be fully
 # resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_non_assetized_child_ref_assetized_grandchild():
     stage = open_stage(
         "resources/integration_test_data"
@@ -162,3 +159,25 @@ def open_stage(path_relative_from_file, context=None):
         return Usd.Stage.Open(full_path, context)
 
     return Usd.Stage.Open(full_path)
+
+
+@pytest.fixture(autouse=True)
+def bal_library(monkeypatch, test_data_root):
+    monkeypatch.setenv(
+        "BAL_LIBRARY_PATH", os.path.join(test_data_root, "bal_library.json")
+    )
+
+
+@pytest.fixture(autouse=True)
+def test_data_root_env_var(monkeypatch, test_data_root):
+    """
+    The TEST_DATA_ROOT env var is expanded in the various BAL JSON
+    libraries, to provide portable absolute paths to file assets.
+    """
+    monkeypatch.setenv("TEST_DATA_ROOT", test_data_root)
+
+
+@pytest.fixture
+def test_data_root():
+    script_dir = os.path.realpath(os.path.dirname(__file__))
+    return os.path.join(script_dir, "resources", "integration_test_data")
