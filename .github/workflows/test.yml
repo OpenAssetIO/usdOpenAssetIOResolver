@@ -61,4 +61,4 @@ jobs:
           export OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio.conf
           export PYTHONPATH=/usr/local/lib/python/:$GITHUB_WORKSPACE/openassetio-build/lib/python3.9/site-packages
           cd tests
-          python -m pytest . -v
+          python -m pytest -v --capture=tee-sys .
