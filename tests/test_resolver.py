@@ -17,6 +17,8 @@ from pxr import Plug, Usd, Ar
 # all tests. If you're wondering where this is configured, it may
 # just be set via the `PXR_PLUGINPATH_NAME` environment variable.
 
+# TODO(DF): More tests for error cases.
+
 
 # This test can be removed once the logging transforms, alchemy like,
 # into real functionality.
@@ -65,7 +67,6 @@ def test_openassetio_resolver_has_no_effect_with_search_path():
 # level document containing an assetized reference resolvable by
 # OpenAssetIO to a third level document, and that the resolved paths
 # are search path based, then the document can be fully resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_recursive_assetized_resolve():
     stage = open_stage(
         "resources/integration_test_data/recursive_assetized_resolve/parking_lot.usd"
@@ -79,7 +80,6 @@ def test_recursive_assetized_resolve():
 # document containing a non-assetized, adjacent relative file path
 # reference to a third level document, then the document can be fully
 # resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_assetized_child_ref_non_assetized_grandchild():
     stage = open_stage(
         "resources/integration_test_data"
@@ -94,7 +94,6 @@ def test_assetized_child_ref_non_assetized_grandchild():
 # level document containing an assetized reference resolvable by
 # OpenAssetIO to a third level document, then the document can be fully
 # resolved.
-@pytest.mark.xfail(reason="OpenAssetIO not integrated yet")
 def test_non_assetized_child_ref_assetized_grandchild():
     stage = open_stage(
         "resources/integration_test_data"

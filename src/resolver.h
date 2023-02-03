@@ -3,12 +3,14 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <pxr/usd/ar/defaultResolver.h>
 
 #include <openassetio/typedefs.hpp>
 
+OPENASSETIO_FWD_DECLARE(Context)
 OPENASSETIO_FWD_DECLARE(hostApi, Manager)
 OPENASSETIO_FWD_DECLARE(log, LoggerInterface)
 
@@ -53,4 +55,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   openassetio::log::LoggerInterfacePtr logger_;
   /// OpenAssetIO Manager. Initialised on construction.
   openassetio::hostApi::ManagerPtr manager_;
+
+  /// Fixed OpenAssetIO read context.
+  openassetio::ContextConstPtr readContext_;
 };
