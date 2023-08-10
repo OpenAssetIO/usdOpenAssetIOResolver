@@ -10,38 +10,16 @@ import pytest
 
 # This environment var must be set before the usd imports.
 os.environ["TF_DEBUG"] = "OPENASSETIO_RESOLVER"
+if "PXR_PLUGINPATH_NAME" not in os.environ:
+    # Set up our resolver plugin if not already set up, and we can
+    root_dir = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
+    plug_info = os.path.join(root_dir, "build", "dist", "resources", "pluginfo.json")
+    if os.path.exists(plug_info):
+        os.environ["PXR_PLUGINPATH_NAME"] = plug_info
+
 from pxr import Plug, Usd, Ar
 
-
-# Assume OpenAssetIO is configured as the custom primary resolver for
-# all tests. If you're wondering where this is configured, it may
-# just be set via the `PXR_PLUGINPATH_NAME` environment variable.
-
 # TODO(DF): More tests for error cases.
-
-
-# This test can be removed once the logging transforms, alchemy like,
-# into real functionality.
-def test_open_stage_and_logging(capfd):
-    open_stage("resources/empty_shot.usda")
-    captured = capfd.readouterr()
-
-    outputs = captured.out.split("UsdOpenAssetIOResolver::")
-    assert "UsdOpenAssetIOResolver" in outputs[1]
-    assert "_CreateIdentifier" in outputs[2]
-    assert "result" in outputs[2]
-    assert "_Resolve" in outputs[3]
-    assert "result" in outputs[3]
-    assert "_GetExtension" in outputs[4]
-    assert "result" in outputs[4]
-    assert "_GetAssetInfo" in outputs[5]
-    assert "result" in outputs[5]
-    assert "_OpenAsset" in outputs[6]
-    assert "result" in outputs[6]
-    assert "_GetModificationTimestamp" in outputs[7]
-    assert "result" in outputs[7]
-    assert "_GetExtension" in outputs[8]
-    assert "result" in outputs[8]
 
 
 # Given a USD document that references an asset via a direct relative
@@ -126,16 +104,6 @@ def test_error_triggering_asset_ref(capfd):
 
 ##### Utility Functions #####
 
-# Verify OpenAssetIO configured as the AR resolver.
-@pytest.fixture(autouse=True)
-def openassetio_configured():
-    plugin_registry = Plug.Registry()
-    plugin = plugin_registry.GetPluginWithName("usdOpenAssetIOResolver")
-
-    assert (
-        plugin is not None
-    ), "usdOpenAssetIOResolver plugin not loaded, please check PXR_PLUGINPATH_NAME env variable"
-
 
 # Log openassetio resolver messages
 @pytest.fixture(autouse=True)
@@ -183,22 +151,14 @@ def open_stage(path_relative_from_file, context=None):
 
 
 @pytest.fixture(autouse=True)
-def bal_library(monkeypatch, test_data_root):
+def openasssetio_default_config(monkeypatch, resources_dir):
     monkeypatch.setenv(
-        "BAL_LIBRARY_PATH", os.path.join(test_data_root, "bal_library.json")
+        "OPENASSETIO_DEFAULT_CONFIG",
+        os.path.join(resources_dir, "openassetio_config.toml"),
     )
 
 
-@pytest.fixture(autouse=True)
-def test_data_root_env_var(monkeypatch, test_data_root):
-    """
-    The TEST_DATA_ROOT env var is expanded in the various BAL JSON
-    libraries, to provide portable absolute paths to file assets.
-    """
-    monkeypatch.setenv("TEST_DATA_ROOT", test_data_root)
-
-
 @pytest.fixture
-def test_data_root():
+def resources_dir():
     script_dir = os.path.realpath(os.path.dirname(__file__))
-    return os.path.join(script_dir, "resources", "integration_test_data")
+    return os.path.join(script_dir, "resources")
