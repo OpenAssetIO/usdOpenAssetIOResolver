@@ -4,6 +4,7 @@
 #include "resolver.h"
 
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
@@ -23,6 +24,8 @@
 #include <openassetio/log/SeverityFilter.hpp>
 #include <openassetio/python/hostApi.hpp>
 
+#include <openassetio_mediacreation/traits/content/LocatableContentTrait.hpp>
+
 // NOLINTNEXTLINE
 PXR_NAMESPACE_USING_DIRECTIVE
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,6 +37,21 @@ TF_DEBUG_CODES(OPENASSETIO_RESOLVER)
 PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace {
+/*
+ * Replaces all occurrences of the search string in the subject with
+ * the supplied replacement.
+ */
+void replaceAllInString(std::string &subject, const std::string &search,
+                        const std::string &replace) {
+  const size_t searchLength = search.length();
+  const size_t replaceLength = replace.length();
+  size_t pos = 0;
+  while ((pos = subject.find(search, pos)) != std::string::npos) {
+    subject.replace(pos, searchLength, replace);
+    pos += replaceLength;
+  }
+}
+
 /// Converter logger from OpenAssetIO log framing to USD log outputs.
 class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
  public:
@@ -73,12 +91,6 @@ class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
   }
 };
 
-// TODO(DF): Replace with C++ trait views, once they exist.
-const openassetio::trait::TraitId kLocateableContentTraitId =  // NOLINT
-    "openassetio-mediacreation:content.LocatableContent";
-const openassetio::trait::property::Key kLocateableContentLocationPropertyKey =  // NOLINT
-    "location";
-
 /**
  * Retrieve the resolved file path of an entity reference.
  *
@@ -100,39 +112,30 @@ template <typename Ref>
 Ref locationInManagerContextForEntity(const openassetio::hostApi::ManagerPtr &manager,
                                       const openassetio::ContextConstPtr &context, Ref assetPath) {
   // Check if the assetPath is an OpenAssetIO entity reference.
-  if (auto maybeEntityReference = manager->createEntityReferenceIfValid(assetPath)) {
-    openassetio::TraitsDataPtr traitsData;
+  if (auto entityReference = manager->createEntityReferenceIfValid(assetPath)) {
+    using openassetio_mediacreation::traits::content::LocatableContentTrait;
 
-    // Resolve the locateableContent trait in order to get the
-    // (absolute) path to the asset.
-    manager->resolve(
-        {std::move(*maybeEntityReference)}, {kLocateableContentTraitId}, context,
-        [&traitsData]([[maybe_unused]] std::size_t idx,
-                      const openassetio::TraitsDataPtr &resolvedTraitsData) {
-          // Success callback.
-          traitsData = resolvedTraitsData;
-        },
-        []([[maybe_unused]] std::size_t idx, const openassetio::BatchElementError &error) {
-          // Error callback.
-          // TODO(DF): Better conversion of BatchElementError to
-          //  appropriate exception type.
-          std::string errorMsg = "error code ";
-          errorMsg += std::to_string(static_cast<int>(error.code));
-          errorMsg += ": ";
-          errorMsg += error.message;
-          throw std::runtime_error{errorMsg};
-        });
+    // Resolve the locatable content trait, this will provide a URL
+    // that points to the final content
+    openassetio::TraitsDataPtr traitsData =
+        manager->resolve(std::move(*entityReference), {LocatableContentTrait::kId}, context);
 
-    if (openassetio::trait::property::Value propValue; traitsData->getTraitProperty(
-            &propValue, kLocateableContentTraitId, kLocateableContentLocationPropertyKey)) {
-      // We've successfully got the locateableContent trait for the
-      // entity.
-      static constexpr std::size_t kProtocolSize = std::string_view{"file://"}.size();
-      return Ref{std::get<openassetio::Str>(propValue).substr(kProtocolSize)};
+    // OpenAssetIO is URL based, but we need a path, so check the
+    // scheme and decode into a path
+
+    static constexpr std::string_view kFileURLScheme{"file://"};
+    static constexpr std::size_t kProtocolSize = kFileURLScheme.size();
+
+    openassetio::Str url = LocatableContentTrait(traitsData).getLocation();
+    if (url.rfind(kFileURLScheme, 0) == openassetio::Str::npos) {
+      std::string msg = "Only file URLs are supported: ";
+      msg += url;
+      throw std::runtime_error(msg);
     }
-    // TODO(DF): Here we fall through to returning `assetPath` verbatim
-    //  if the "locateableContent" trait isn't found. We need to
-    //  consider if this is the correct thing to do.
+
+    // TODO(tc): Decode % escape sequences properly
+    replaceAllInString(url, "%20", " ");
+    return Ref{url.substr(kProtocolSize)};
   }
 
   return assetPath;

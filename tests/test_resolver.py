@@ -17,7 +17,7 @@ if "PXR_PLUGINPATH_NAME" not in os.environ:
     if os.path.exists(plug_info):
         os.environ["PXR_PLUGINPATH_NAME"] = plug_info
 
-from pxr import Plug, Usd, Ar
+from pxr import Plug, Usd, Ar, Tf
 
 # TODO(DF): More tests for error cases.
 
@@ -96,10 +96,15 @@ def test_error_triggering_asset_ref(capfd):
     )
 
     logs = capfd.readouterr()
-    assert (
-        "OpenAssetIO error in UsdOpenAssetIOResolver::_GetExtension: RuntimeError: error code 130:"
-        in logs.err
-    )
+    assert "MalformedEntityReference" in logs.err
+
+
+def test_when_resolves_to_non_file_url_then_error():
+    with pytest.raises(Tf.ErrorException) as exc:
+        Usd.Stage.Open("bal:///not_a_file")
+    # The exception seems to be truncated which looses the specifics of
+    # our message (doh!). Check at least we were in the stack
+    assert "UsdOpenAssetIOResolverLogger" in str(exc)
 
 
 ##### Utility Functions #####

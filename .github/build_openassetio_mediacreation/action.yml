@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The Foundry Visionmongers Ltd
+
+# Composite action for reuse within other workflows.
+# Builds OpenAssetIO-MediaCreation.
+# Should be run on a ghcr.io/openassetio/openassetio-build container.
+
+name: Build OpenAssetIO-MediaCreation
+description: Builds OpenAssetIO-MediaCreation and publishes an artifact
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout OpenAssetIO-MediaCreation
+      uses: actions/checkout@v3
+      with:
+        repository: OpenAssetIO/OpenAssetIO-MediaCreation
+        path: openassetio-mediacreation-checkout
+
+    - name: Build OpenAssetIO-MediaCreation
+      shell: bash
+      run: |
+        cd openassetio-mediacreation-checkout
+        mkdir build
+        python -m pip install openassetio-traitgen
+        cmake -G Ninja -S . -B build
+        cmake --build build
+        cmake --install build
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: OpenAssetIO-MediaCreation Build
+        path: openassetio-mediacreation-checkout/build/dist
+        retention-days: 1

@@ -54,6 +54,16 @@ jobs:
       - name: Build
         uses: ./.github/build_openassetio
 
+  build-openassetio-mediacreation:
+    name: Build OpenAssetIO-MediaCreation
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openassetio/openassetio-build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/build_openassetio_mediacreation
+
   cpp-linters:
     name: C++ linters
     runs-on: ubuntu-20.04
@@ -82,9 +92,16 @@ jobs:
           name: OpenAssetIO Build
           path: ./openassetio-build
 
+      - name: Get OpenAssetIO-MediaCreation
+        uses: actions/download-artifact@v3
+        with:
+          name: OpenAssetIO-MediaCreation Build
+          path: ./openassetio-mediacreation-build
+
       - name: Configure CMake build
         run: >
-          cmake -DCMAKE_PREFIX_PATH="./openassetio-build" -S . -B build -G Ninja
+          cmake -DCMAKE_PREFIX_PATH="./openassetio-build;./openassetio-mediacreation-build"
+          -S . -B build -G Ninja
           --install-prefix ${{ github.workspace }}/dist
           --preset lint
 

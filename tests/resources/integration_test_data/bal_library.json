@@ -27,7 +27,8 @@
                 {
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
-                            "location": "file://${bal_library_dir}/recursive_assetized_resolve/floors/floor1.usd"
+                            "location":
+                            "file://${bal_library_dir}/recursive_assetized_resolve/floors/floor%201.usd"
                         }
                     }
                 }
@@ -39,6 +40,17 @@
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
                             "location": "file://${bal_library_dir}/recursive_assetized_resolve/cars/car.usd"
+                        }
+                    }
+                }
+            ]
+        },
+        "not_a_file": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "https://stuffonmycat.com"
                         }
                     }
                 }
