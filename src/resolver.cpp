@@ -52,7 +52,11 @@ void replaceAllInString(std::string &subject, const std::string &search,
   }
 }
 
-/// Converter logger from OpenAssetIO log framing to USD log outputs.
+/*
+ * OpenAssetIO LoggerInterface implementation
+ *
+ * Converter logger from OpenAssetIO log framing to USD log outputs.
+ */
 class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
  public:
   void log(Severity severity, const openassetio::Str &message) override {
@@ -65,8 +69,6 @@ class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
         TF_DEBUG(OPENASSETIO_RESOLVER).Msg(message + "\n");
         break;
       case Severity::kError:
-        // TODO(EM) : Review to see which error types are most appropriate,
-        //  are all errors (not criticals) non fatal?
         TF_ERROR(TfDiagnosticType::TF_DIAGNOSTIC_NONFATAL_ERROR_TYPE, message);
         break;
       case Severity::kInfo:
@@ -80,6 +82,12 @@ class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
   }
 };
 
+/**
+ * OpenAssetIO HostInterface implementation
+ *
+ * This identifies the Ar2 plugin uniquely should the manager plugin
+ * wish to adapt its behaviour.
+ */
 class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
  public:
   [[nodiscard]] openassetio::Identifier identifier() const override {
@@ -173,9 +181,11 @@ auto catchAndLogExceptions(Fn &&fn, const openassetio::log::LoggerInterfacePtr &
 }
 }  // namespace
 
-
 // ------------------------------------------------------------
-/* Ar Resolver Implementation */
+
+/*
+ * Ar Resolver Implementation
+ */
 
 UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
   // Note: it is safe to throw exceptions from the constructor. USD will
@@ -199,12 +209,15 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
         openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
   }
 
-  // TODO(DF): Set appropriate locale.
   readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead,
                                             openassetio::Context::Retention::kTransient);
 }
 
 UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() = default;
+
+/*
+ * Read
+ */
 
 std::string UsdOpenAssetIOResolver::_CreateIdentifier(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
@@ -219,7 +232,7 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
           // resolve to an absolute path, making the anchorAssetPath redundant
           // (for now).
           // TODO(DF): Allow the manager to provide an identifier representing
-          //  an "anchored" entity reference.
+          //  an "anchored" entity reference via getWithRelationship.
           identifier = assetPath;
         } else {
           identifier = ArDefaultResolver::_CreateIdentifier(assetPath, anchorAssetPath);
@@ -228,17 +241,6 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
         return identifier;
       },
       logger_, TF_FUNC_NAME());
-}
-
-std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
-    const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
-  if (manager_->isEntityReferenceString(assetPath)) {
-    std::string message = "Writes to OpenAssetIO entity references are not currently supported ";
-    message += assetPath;
-    logger_->critical(message);
-    return "";
-  }
-  return ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
@@ -250,6 +252,26 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
         return ArDefaultResolver::_Resolve(assetPath);
       },
       logger_, TF_FUNC_NAME());
+}
+
+/*
+ * Write
+ *
+ * We don't currently support writes to OpenAssetIO entity references.
+ * In order to call register when the ArAsset is closed, we'll need to
+ * not resolve in _ResolveForNewAsset, and pass the entity reference
+ * through.
+ */
+
+std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
+    const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
+  if (manager_->isEntityReferenceString(assetPath)) {
+    std::string message = "Writes to OpenAssetIO entity references are not currently supported ";
+    message += assetPath;
+    logger_->critical(message);
+    return "";
+  }
+  return ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
 ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &assetPath) const {
@@ -264,6 +286,15 @@ ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &as
 
 /*
  * Pass-through asset operations
+ *
+ * These methods are simply relayed to the ArDefaultResolver. There may
+ * be interest in fetching data for some of these from the manager, but
+ * we don't have a real use case just yet. Doing so increases complexity
+ * as we'd need to return both the resolved path _and_ the original
+ * entity reference from _Resolve, so we could make queries in these
+ * methods. We'll need this for publishing operations, but avoiding that
+ * overhead for the more common (and hot) read case is critical.
+ *
  */
 std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) const {
   return ArDefaultResolver::_GetExtension(assetPath);
@@ -284,13 +315,11 @@ std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
   return ArDefaultResolver::_OpenAsset(resolvedPath);
 }
 
-// TODO(DF): Implement for publishing workflow.
 bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolvedPath,
                                                   std::string *whyNot) const {
   return ArDefaultResolver::_CanWriteAssetToPath(resolvedPath, whyNot);
 }
 
-// TODO(DF): Implement for publishing workflow.
 std::shared_ptr<ArWritableAsset> UsdOpenAssetIOResolver::_OpenAssetForWrite(
     const ArResolvedPath &resolvedPath, WriteMode writeMode) const {
   return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, writeMode);
