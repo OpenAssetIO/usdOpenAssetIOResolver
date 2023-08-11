@@ -210,24 +210,13 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
   // TODO(DF): Set appropriate locale.
   readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead,
                                             openassetio::Context::Retention::kTransient);
-
-  logger_->debug(TF_FUNC_NAME());
 }
 
-UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() { logger_->debug(TF_FUNC_NAME()); }
+UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() = default;
 
 std::string UsdOpenAssetIOResolver::_CreateIdentifier(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  assetPath: " << assetPath
-           << "\n  anchorAssetPath: " << anchorAssetPath.GetPathString();
-    logger_->debug(logMsg.str());
-  }
-
-  auto result = catchAndLogExceptions(
+  return catchAndLogExceptions(
       [&] {
         std::string identifier;
 
@@ -246,40 +235,17 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
 
         return identifier;
       },
-      logger_, fnName);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "result: " << result;
-    logger_->debug(logMsg.str());
-  }
-  return result;
+      logger_, TF_FUNC_NAME());
 }
 
 // TODO(DF): Implement for publishing workflow.
 std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
-  auto result = ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
-  logger_->debug(TF_FUNC_NAME());
-
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  anchorAssetPath: " + anchorAssetPath.GetPathString());
-  logger_->debug("  result: " + result);
-
-  return result;
+  return ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  assetPath: " << assetPath;
-    logger_->debug(logMsg.str());
-  }
-
-  auto result = catchAndLogExceptions(
+  return catchAndLogExceptions(
       [&] {
         if (manager_->isEntityReferenceString(assetPath)) {
           return ArResolvedPath{
@@ -287,138 +253,44 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
         }
         return ArDefaultResolver::_Resolve(assetPath);
       },
-      logger_, fnName);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "result: " << result.GetPathString();
-    logger_->debug(logMsg.str());
-  }
-
-  return result;
+      logger_, TF_FUNC_NAME());
 }
 
 // TODO(DF): Implement for publishing workflow.
 ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &assetPath) const {
-  auto result = ArDefaultResolver::_ResolveForNewAsset(assetPath);
-
-  logger_->debug(TF_FUNC_NAME());
-  logger_->debug("  assetPath: " + assetPath);
-  logger_->debug("  result: " + result.GetPathString());
-
-  return result;
+  return ArDefaultResolver::_ResolveForNewAsset(assetPath);
 }
 
-/* Asset Operations*/
+/*
+ * Pass-through asset operations
+ */
 std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  assetPath: " << assetPath;
-    logger_->debug(logMsg.str());
-  }
-
-  auto result = ArDefaultResolver::_GetExtension(assetPath);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "result: " << result;
-    logger_->debug(logMsg.str());
-  }
-
-  return result;
+  return ArDefaultResolver::_GetExtension(assetPath);
 }
 
 ArAssetInfo UsdOpenAssetIOResolver::_GetAssetInfo(const std::string &assetPath,
                                                   const ArResolvedPath &resolvedPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  assetPath: " << assetPath
-           << "\n  resolvedPath: " << resolvedPath.GetPathString();
-    logger_->debug(logMsg.str());
-  }
-  // TODO(DF): Determine if there is value in supporting this via the
-  //  manager, including any useful data that can be stuffed into the
-  //  generic `resolverInfo` VtValue member.
-  auto result = ArDefaultResolver::_GetAssetInfo(assetPath, resolvedPath);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "\n  result.assetName: " << result.assetName
-           << "\n  result.repoPath: " << result.repoPath;
-    logger_->debug(logMsg.str());
-  }
-
-  return result;
+  return ArDefaultResolver::_GetAssetInfo(assetPath, resolvedPath);
 }
 
 ArTimestamp UsdOpenAssetIOResolver::_GetModificationTimestamp(
     const std::string &assetPath, const ArResolvedPath &resolvedPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  assetPath: " << assetPath
-           << "\n  resolvedPath: " << resolvedPath.GetPathString();
-    logger_->debug(logMsg.str());
-  }
-
-  auto result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "result: " << result.GetTime();
-    logger_->debug(logMsg.str());
-  }
-
-  return result;
+  return ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
 }
 
 std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
     const ArResolvedPath &resolvedPath) const {
-  const std::string fnName = TF_FUNC_NAME();
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] " << fnName
-           << "\n  resolvedPath: " << resolvedPath.GetPathString();
-    logger_->debug(logMsg.str());
-  }
-
-  auto result = ArDefaultResolver::_OpenAsset(resolvedPath);
-
-  {
-    std::ostringstream logMsg;
-    logMsg << "[tid=" << std::this_thread::get_id() << "] "
-           << "result: " << result.get();
-    logger_->debug(logMsg.str());
-  }
-  return result;
+  return ArDefaultResolver::_OpenAsset(resolvedPath);
 }
 
 // TODO(DF): Implement for publishing workflow.
 bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolvedPath,
                                                   std::string *whyNot) const {
-  auto result = ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
-
-  logger_->debug(TF_FUNC_NAME());
-  logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
-  logger_->debug("  result: " + std::to_string(static_cast<int>(result)));
-
-  return result;
+  return ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
 }
 
 // TODO(DF): Implement for publishing workflow.
 std::shared_ptr<ArWritableAsset> UsdOpenAssetIOResolver::_OpenAssetForWrite(
     const ArResolvedPath &resolvedPath, WriteMode writeMode) const {
-  logger_->debug(TF_FUNC_NAME());
-  logger_->debug("  resolvedPath: " + resolvedPath.GetPathString());
-
   return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, writeMode);
 }
