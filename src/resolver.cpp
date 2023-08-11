@@ -94,51 +94,41 @@ class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
 /**
  * Retrieve the resolved file path of an entity reference.
  *
- * If the given `assetPath` is not an entity reference, assume it's
- * already a path and pass through unmodified.
- *
- * Otherwise, resolve the "locateableContent" trait of the entity and
+ * This will resolve the "locateableContent" trait of the entity and
  * return the "location" property of it, converted from a URL to a
- * posix file path.
+ * file path.
  *
  * @param manager OpenAssetIO manager plugin wrapper.
  * @param context OpenAssetIO calling context.
- * @param assetPath String-like asset path that may or may not be an
- * entity reference.
- * @return Resolved file path if `assetPath` is an entity reference,
- * `assetPath` otherwise.
+ * @param entityReference The reference to resolve.
+ * @return Resolved file path.
  */
-template <typename Ref>
-Ref locationInManagerContextForEntity(const openassetio::hostApi::ManagerPtr &manager,
-                                      const openassetio::ContextConstPtr &context, Ref assetPath) {
-  // Check if the assetPath is an OpenAssetIO entity reference.
-  if (auto entityReference = manager->createEntityReferenceIfValid(assetPath)) {
-    using openassetio_mediacreation::traits::content::LocatableContentTrait;
+std::string resolveToPath(const openassetio::hostApi::ManagerPtr &manager,
+                          const openassetio::ContextConstPtr &context,
+                          const openassetio::EntityReference &entityReference) {
+  using openassetio_mediacreation::traits::content::LocatableContentTrait;
 
-    // Resolve the locatable content trait, this will provide a URL
-    // that points to the final content
-    openassetio::TraitsDataPtr traitsData =
-        manager->resolve(std::move(*entityReference), {LocatableContentTrait::kId}, context);
+  // Resolve the locatable content trait, this will provide a URL
+  // that points to the final content
+  openassetio::TraitsDataPtr traitsData =
+      manager->resolve(entityReference, {LocatableContentTrait::kId}, context);
 
-    // OpenAssetIO is URL based, but we need a path, so check the
-    // scheme and decode into a path
+  // OpenAssetIO is URL based, but we need a path, so check the
+  // scheme and decode into a path
 
-    static constexpr std::string_view kFileURLScheme{"file://"};
-    static constexpr std::size_t kProtocolSize = kFileURLScheme.size();
+  static constexpr std::string_view kFileURLScheme{"file://"};
+  static constexpr std::size_t kProtocolSize = kFileURLScheme.size();
 
-    openassetio::Str url = LocatableContentTrait(traitsData).getLocation();
-    if (url.rfind(kFileURLScheme, 0) == openassetio::Str::npos) {
-      std::string msg = "Only file URLs are supported: ";
-      msg += url;
-      throw std::runtime_error(msg);
-    }
-
-    // TODO(tc): Decode % escape sequences properly
-    replaceAllInString(url, "%20", " ");
-    return Ref{url.substr(kProtocolSize)};
+  openassetio::Str url = LocatableContentTrait(traitsData).getLocation();
+  if (url.rfind(kFileURLScheme, 0) == openassetio::Str::npos) {
+    std::string msg = "Only file URLs are supported: ";
+    msg += url;
+    throw std::runtime_error(msg);
   }
 
-  return assetPath;
+  // TODO(tc): Decode % escape sequences properly
+  replaceAllInString(url, "%20", " ");
+  return url.substr(kProtocolSize);
 }
 
 /**
@@ -183,8 +173,10 @@ auto catchAndLogExceptions(Fn &&fn, const openassetio::log::LoggerInterfacePtr &
 }
 }  // namespace
 
+
 // ------------------------------------------------------------
 /* Ar Resolver Implementation */
+
 UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
   // Note: it is safe to throw exceptions from the constructor. USD will
   // error gracefully, unlike exceptions from other member functions,
@@ -247,9 +239,8 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
 ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) const {
   return catchAndLogExceptions(
       [&] {
-        if (manager_->isEntityReferenceString(assetPath)) {
-          return ArResolvedPath{
-              locationInManagerContextForEntity(manager_, readContext_, assetPath)};
+        if (auto entityReference = manager_->createEntityReferenceIfValid(assetPath)) {
+          return ArResolvedPath{resolveToPath(manager_, readContext_, *entityReference)};
         }
         return ArDefaultResolver::_Resolve(assetPath);
       },
