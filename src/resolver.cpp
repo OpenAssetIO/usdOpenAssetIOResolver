@@ -241,9 +241,7 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
           //  an "anchored" entity reference.
           identifier = assetPath;
         } else {
-          identifier = ArDefaultResolver::_CreateIdentifier(
-              assetPath,
-              locationInManagerContextForEntity(manager_, readContext_, anchorAssetPath));
+          identifier = ArDefaultResolver::_CreateIdentifier(assetPath, anchorAssetPath);
         }
 
         return identifier;
@@ -284,9 +282,8 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
   auto result = catchAndLogExceptions(
       [&] {
         if (manager_->isEntityReferenceString(assetPath)) {
-          // TODO(DF): We may wish to do more here, e.g.
-          //  `finalizedEntityVersion()`
-          return ArResolvedPath{assetPath};
+          return ArResolvedPath{
+              locationInManagerContextForEntity(manager_, readContext_, assetPath)};
         }
         return ArDefaultResolver::_Resolve(assetPath);
       },
@@ -323,13 +320,7 @@ std::string UsdOpenAssetIOResolver::_GetExtension(const std::string &assetPath) 
     logger_->debug(logMsg.str());
   }
 
-  auto result = catchAndLogExceptions(
-      [&] {
-        // TODO(DF): Give the manager a chance to provide the file extension.
-        return ArDefaultResolver::_GetExtension(
-            locationInManagerContextForEntity(manager_, readContext_, assetPath));
-      },
-      logger_, fnName);
+  auto result = ArDefaultResolver::_GetExtension(assetPath);
 
   {
     std::ostringstream logMsg;
@@ -378,17 +369,7 @@ ArTimestamp UsdOpenAssetIOResolver::_GetModificationTimestamp(
     logger_->debug(logMsg.str());
   }
 
-  auto result = catchAndLogExceptions(
-      [&] {
-        if (manager_->isEntityReferenceString(assetPath)) {
-          // Deliberately use a valid fixed timestamp, which will force caching
-          // until we implement a more considered method.
-          // TODO(DF): Consider how best to handle this via OpenAssetIO.
-          return ArTimestamp{0};
-        }
-        return ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
-      },
-      logger_, fnName);
+  auto result = ArDefaultResolver::_GetModificationTimestamp(assetPath, resolvedPath);
 
   {
     std::ostringstream logMsg;
@@ -410,12 +391,7 @@ std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
     logger_->debug(logMsg.str());
   }
 
-  auto result = catchAndLogExceptions(
-      [&] {
-        return ArDefaultResolver::_OpenAsset(
-            locationInManagerContextForEntity(manager_, readContext_, resolvedPath));
-      },
-      logger_, fnName);
+  auto result = ArDefaultResolver::_OpenAsset(resolvedPath);
 
   {
     std::ostringstream logMsg;
