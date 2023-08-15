@@ -286,7 +286,7 @@ std::shared_ptr<ArAsset> UsdOpenAssetIOResolver::_OpenAsset(
 // TODO(DF): Implement for publishing workflow.
 bool UsdOpenAssetIOResolver::_CanWriteAssetToPath(const ArResolvedPath &resolvedPath,
                                                   std::string *whyNot) const {
-  return ArDefaultResolver::CanWriteAssetToPath(resolvedPath, whyNot);
+  return ArDefaultResolver::_CanWriteAssetToPath(resolvedPath, whyNot);
 }
 
 // TODO(DF): Implement for publishing workflow.
