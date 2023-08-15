@@ -230,9 +230,14 @@ std::string UsdOpenAssetIOResolver::_CreateIdentifier(
       logger_, TF_FUNC_NAME());
 }
 
-// TODO(DF): Implement for publishing workflow.
 std::string UsdOpenAssetIOResolver::_CreateIdentifierForNewAsset(
     const std::string &assetPath, const ArResolvedPath &anchorAssetPath) const {
+  if (manager_->isEntityReferenceString(assetPath)) {
+    std::string message = "Writes to OpenAssetIO entity references are not currently supported ";
+    message += assetPath;
+    logger_->critical(message);
+    return "";
+  }
   return ArDefaultResolver::_CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
@@ -247,8 +252,13 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
       logger_, TF_FUNC_NAME());
 }
 
-// TODO(DF): Implement for publishing workflow.
 ArResolvedPath UsdOpenAssetIOResolver::_ResolveForNewAsset(const std::string &assetPath) const {
+  if (manager_->isEntityReferenceString(assetPath)) {
+    std::string message = "Writes to OpenAssetIO entity references are not currently supported ";
+    message += assetPath;
+    logger_->critical(message);
+    return ArResolvedPath("");
+  }
   return ArDefaultResolver::_ResolveForNewAsset(assetPath);
 }
 

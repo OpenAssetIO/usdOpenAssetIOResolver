@@ -17,7 +17,7 @@ if "PXR_PLUGINPATH_NAME" not in os.environ:
     if os.path.exists(plug_info):
         os.environ["PXR_PLUGINPATH_NAME"] = plug_info
 
-from pxr import Plug, Usd, Ar, Tf
+from pxr import Plug, Usd, Ar, Sdf, Tf
 
 # TODO(DF): More tests for error cases.
 
@@ -105,6 +105,23 @@ def test_when_resolves_to_non_file_url_then_error():
     # The exception seems to be truncated which looses the specifics of
     # our message (doh!). Check at least we were in the stack
     assert "UsdOpenAssetIOResolverLogger" in str(exc)
+
+
+def test_when_writing_to_file_then_ok(capfd, tmp_path):
+    Sdf.Layer.CreateNew(str(tmp_path / "newLayer.usda"))
+    logs = capfd.readouterr()
+    assert (
+        "Writes to OpenAssetIO entity references are not currently supported"
+        not in logs.err
+    )
+
+
+def test_when_writing_to_entity_ref_then_error():
+    with pytest.raises(Tf.ErrorException) as exc:
+        Sdf.Layer.CreateNew("bal:///newLayer")
+    assert "Writes to OpenAssetIO entity references are not currently supported" in str(
+        exc
+    )
 
 
 ##### Utility Functions #####
