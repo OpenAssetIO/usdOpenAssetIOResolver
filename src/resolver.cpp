@@ -209,8 +209,7 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
         openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
   }
 
-  readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead,
-                                            openassetio::Context::Retention::kTransient);
+  readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead);
 }
 
 UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() = default;
