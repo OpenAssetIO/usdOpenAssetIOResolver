@@ -161,19 +161,20 @@ To enable debug logging from the resolver.
 
 ## Testing
 
-To run tests, from the project root
+To run tests, once built, from the project root:
 
 ```sh
-export PXR_PLUGINPATH_NAME=$(pwd)/build/dist/resources/plugInfo.json
-cd tests
 python -m pip install -r requirements.txt
-pytest
+python -m pytest
 ```
 
 > **Note**
 >
 > Refer to the [Running](#running) section for the environmental
-> prerequisites to run these tests.
+> prerequisites to run these tests. The tests will set
+> `OPENASSETIO_DEFAULT_CONFIG` appropriately, and unless otherwise
+> defined, attempt to set `PXR_PLUGINPATH_NAME` if the standard `build`
+> directory was used.
 
 ## A note on Python
 

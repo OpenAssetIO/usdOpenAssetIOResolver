@@ -16,6 +16,7 @@ target_link_libraries(${PLUGIN_NAME}
     ar
     OpenAssetIO::openassetio-core
     OpenAssetIO::openassetio-python-bridge
+    OpenAssetIO-MediaCreation::openassetio-mediacreation
 )
 
 #-----------------------------------------------------------------------

@@ -5,7 +5,7 @@
                 {
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
-                            "location": "file://${TEST_DATA_ROOT}/assetized_child_ref_non_assetized_grandchild/floor1.usd"
+                            "location": "file://${bal_library_dir}/assetized_child_ref_non_assetized_grandchild/floor1.usd"
                         }
                     }
                 }
@@ -16,7 +16,7 @@
                 {
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
-                            "location": "file://${TEST_DATA_ROOT}/non_assetized_child_ref_assetized_grandchild/car.usd"
+                            "location": "file://${bal_library_dir}/non_assetized_child_ref_assetized_grandchild/car.usd"
                         }
                     }
                 }
@@ -27,7 +27,8 @@
                 {
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
-                            "location": "file://${TEST_DATA_ROOT}/recursive_assetized_resolve/floors/floor1.usd"
+                            "location":
+                            "file://${bal_library_dir}/recursive_assetized_resolve/floors/floor%201.usd"
                         }
                     }
                 }
@@ -38,7 +39,18 @@
                 {
                     "traits": {
                         "openassetio-mediacreation:content.LocatableContent": {
-                            "location": "file://${TEST_DATA_ROOT}/recursive_assetized_resolve/cars/car.usd"
+                            "location": "file://${bal_library_dir}/recursive_assetized_resolve/cars/car.usd"
+                        }
+                    }
+                }
+            ]
+        },
+        "not_a_file": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "https://stuffonmycat.com"
                         }
                     }
                 }

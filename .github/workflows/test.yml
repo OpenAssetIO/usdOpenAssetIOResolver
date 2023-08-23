@@ -21,6 +21,16 @@ jobs:
       - name: Build
         uses: ./.github/build_openassetio
 
+  build-openassetio-mediacreation:
+    name: Build OpenAssetIO-MediaCreation
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openassetio/openassetio-build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/build_openassetio_mediacreation
+
   test:
     name: Test-Resolver
     runs-on: ubuntu-latest
@@ -36,14 +46,21 @@ jobs:
           name: OpenAssetIO Build
           path: ./openassetio-build
 
+      - name: Get OpenAssetIO-MediaCreation
+        uses: actions/download-artifact@v3
+        with:
+          name: OpenAssetIO-MediaCreation Build
+          path: ./openassetio-mediacreation-build
+
       - name: Build and install Resolver
         run: |
-          cmake -S . -DCMAKE_PREFIX_PATH="./openassetio-build" -B build
+          cmake -S . -DCMAKE_PREFIX_PATH="./openassetio-build;./openassetio-mediacreation-build" -B build
           cmake --build build
           cmake --install build
 
       - run: |
           python -m pip install -r tests/requirements.txt
+          python -m pip install importlib-metadata
 
         # PYTHONPATH here is extended with `/usr/local/lib/python`
         # because the USD install on this docker container is odd, and

@@ -58,6 +58,7 @@ find_package(pxr REQUIRED)
 
 # Find OpenAssetIO
 find_package(OpenAssetIO REQUIRED)
+find_package(OpenAssetIO-MediaCreation REQUIRED)
 
 # Add Static analysis targets
 include(StaticAnalyzers)
