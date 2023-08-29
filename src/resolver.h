@@ -56,6 +56,6 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   /// OpenAssetIO Manager. Initialised on construction.
   openassetio::hostApi::ManagerPtr manager_;
 
-  /// Fixed OpenAssetIO read context.
-  openassetio::ContextConstPtr readContext_;
+  /// Fixed OpenAssetIO context.
+  openassetio::ContextConstPtr context_;
 };

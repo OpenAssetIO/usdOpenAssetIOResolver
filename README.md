@@ -81,7 +81,7 @@ limitations.
 
 ## Dependencies
 
-### [OpenAssetIO](https://github.com/OpenAssetIO/OpenAssetIO/) (1.0.0-alpha.9)
+### [OpenAssetIO](https://github.com/OpenAssetIO/OpenAssetIO/) (1.0.0-alpha.14)
 
 Currently, OpenAssetIO must be built from source to build
 `usdOpenAssetIOResolver`.
