@@ -16,6 +16,7 @@
 
 #include <openassetio/Context.hpp>
 #include <openassetio/TraitsData.hpp>
+#include <openassetio/access.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
@@ -114,12 +115,13 @@ class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
 std::string resolveToPath(const openassetio::hostApi::ManagerPtr &manager,
                           const openassetio::ContextConstPtr &context,
                           const openassetio::EntityReference &entityReference) {
+  using openassetio::access::ResolveAccess;
   using openassetio_mediacreation::traits::content::LocatableContentTrait;
 
   // Resolve the locatable content trait, this will provide a URL
   // that points to the final content
-  openassetio::TraitsDataPtr traitsData =
-      manager->resolve(entityReference, {LocatableContentTrait::kId}, context);
+  openassetio::TraitsDataPtr traitsData = manager->resolve(
+      entityReference, {LocatableContentTrait::kId}, ResolveAccess::kRead, context);
 
   // OpenAssetIO is URL based, but we need a path, so check the
   // scheme and decode into a path
@@ -209,7 +211,7 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
         openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
   }
 
-  readContext_ = openassetio::Context::make(openassetio::Context::Access::kRead);
+  context_ = openassetio::Context::make();
 }
 
 UsdOpenAssetIOResolver::~UsdOpenAssetIOResolver() = default;
@@ -246,7 +248,7 @@ ArResolvedPath UsdOpenAssetIOResolver::_Resolve(const std::string &assetPath) co
   return catchAndLogExceptions(
       [&] {
         if (auto entityReference = manager_->createEntityReferenceIfValid(assetPath)) {
-          return ArResolvedPath{resolveToPath(manager_, readContext_, *entityReference)};
+          return ArResolvedPath{resolveToPath(manager_, context_, *entityReference)};
         }
         return ArDefaultResolver::_Resolve(assetPath);
       },
