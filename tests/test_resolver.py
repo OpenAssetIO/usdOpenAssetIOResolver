@@ -6,6 +6,8 @@
 # pylint: disable=missing-function-docstring,missing-module-docstring
 
 import os
+from unittest import mock
+
 import pytest
 
 # This environment var must be set before the usd imports.
@@ -19,7 +21,40 @@ if "PXR_PLUGINPATH_NAME" not in os.environ:
 
 from pxr import Plug, Usd, Ar, Sdf, Tf
 
+
 # TODO(DF): More tests for error cases.
+
+# Assert that the USD resolver checks that the OpenAssetIO manager is
+# capable of `resolve`ing.
+#
+# Fork process so that the USD plugin is initialized again, but with
+# patched `hasCapability`.
+@pytest.mark.forked
+def test_when_manager_cannot_resolve_then_exception_thrown(monkeypatch):
+    # pylint: disable=invalid-name,import-outside-toplevel
+    from openassetio_manager_bal.BasicAssetLibraryInterface import (
+        BasicAssetLibraryInterface,
+    )
+
+    Capability = BasicAssetLibraryInterface.Capability
+
+    # Patch BAL to report no resolution capability.
+    hasCapability = mock.Mock(spec=BasicAssetLibraryInterface.hasCapability)
+    monkeypatch.setattr(BasicAssetLibraryInterface, "hasCapability", hasCapability)
+
+    hasCapability.side_effect = lambda capability: capability != Capability.kResolution
+
+    with pytest.raises(
+        ValueError,
+        match="Basic Asset Library 📖 is not capable of resolving entity references",
+    ):
+        open_stage(
+            "resources/integration_test_data/recursive_assetized_resolve/floors/floor 1.usd"
+        )
+
+    # Interestingly, `assert_called_with` and `assert_has_calls` doesn't
+    # work here.
+    assert hasCapability.call_args == mock.call(Capability.kResolution)
 
 
 # Given a USD document that references an asset via a direct relative
@@ -28,7 +63,6 @@ def test_openassetio_resolver_has_no_effect_with_no_search_path():
     stage = open_stage(
         "resources/integration_test_data/resolver_has_no_effect_with_no_search_path/parking_lot.usd"
     )
-
     assert_parking_lot_structure(stage)
 
 
@@ -96,7 +130,7 @@ def test_error_triggering_asset_ref(capfd):
     )
 
     logs = capfd.readouterr()
-    assert "MalformedEntityReference" in logs.err
+    assert "BatchElementException: malformedEntityReference" in logs.err
 
 
 def test_when_resolves_to_non_file_url_then_error():

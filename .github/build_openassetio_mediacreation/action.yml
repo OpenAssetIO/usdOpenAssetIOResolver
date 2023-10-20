@@ -22,7 +22,7 @@ runs:
         cd openassetio-mediacreation-checkout
         mkdir build
         python -m pip install openassetio-traitgen
-        cmake -G Ninja -S . -B build
+        cmake -G Ninja -S . -B build -DOPENASSETIO_MEDIACREATION_GENERATE_PYTHON=ON
         cmake --build build
         cmake --install build
 

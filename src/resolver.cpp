@@ -3,10 +3,8 @@
 
 #include "resolver.h"
 
-#include <sstream>
 #include <stdexcept>
 #include <thread>
-#include <utility>
 
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -15,7 +13,6 @@
 #include <pxr/usd/ar/defineResolver.h>
 
 #include <openassetio/Context.hpp>
-#include <openassetio/TraitsData.hpp>
 #include <openassetio/access.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
@@ -24,6 +21,7 @@
 #include <openassetio/log/LoggerInterface.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
 #include <openassetio/python/hostApi.hpp>
+#include <openassetio/trait/TraitsData.hpp>
 
 #include <openassetio_mediacreation/traits/content/LocatableContentTrait.hpp>
 
@@ -120,7 +118,7 @@ std::string resolveToPath(const openassetio::hostApi::ManagerPtr &manager,
 
   // Resolve the locatable content trait, this will provide a URL
   // that points to the final content
-  openassetio::TraitsDataPtr traitsData = manager->resolve(
+  const openassetio::trait::TraitsDataPtr traitsData = manager->resolve(
       entityReference, {LocatableContentTrait::kId}, ResolveAccess::kRead, context);
 
   // OpenAssetIO is URL based, but we need a path, so check the
@@ -209,6 +207,11 @@ UsdOpenAssetIOResolver::UsdOpenAssetIOResolver() {
     throw std::invalid_argument{
         "No default manager configured, " +
         openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
+  }
+
+  if (!manager_->hasCapability(openassetio::hostApi::Manager::Capability::kResolution)) {
+    throw std::invalid_argument{manager_->displayName() +
+                                " is not capable of resolving entity references"};
   }
 
   context_ = openassetio::Context::make();
