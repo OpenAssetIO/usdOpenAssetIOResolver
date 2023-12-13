@@ -3,4 +3,4 @@ pytest==6.2.4
 # run in a forked subprocess. Useful for testing global initialization
 # code paths.
 pytest-forked==1.6.0
-openassetio-manager-bal
+git+https://github.com/OpenAssetIO/OpenAssetIO-Manager-BAL.git
