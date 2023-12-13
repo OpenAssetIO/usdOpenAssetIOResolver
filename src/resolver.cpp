@@ -14,6 +14,7 @@
 
 #include <openassetio/Context.hpp>
 #include <openassetio/access.hpp>
+#include <openassetio/errors/exceptions.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
@@ -165,7 +166,7 @@ auto catchAndLogExceptions(Fn &&fn, const openassetio::log::LoggerInterfacePtr &
                            const std::string_view name) {
   try {
     return fn();
-  } catch (const std::exception &exc) {
+  } catch (const openassetio::errors::OpenAssetIOException &exc) {
     std::string msg = "OpenAssetIO error in ";
     msg += name;
     msg += ": ";
