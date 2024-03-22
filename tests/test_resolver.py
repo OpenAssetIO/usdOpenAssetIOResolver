@@ -24,6 +24,7 @@ from pxr import Plug, Usd, Ar, Sdf, Tf
 
 # TODO(DF): More tests for error cases.
 
+
 # Assert that the USD resolver checks that the OpenAssetIO manager is
 # capable of `resolve`ing.
 #
