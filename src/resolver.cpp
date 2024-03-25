@@ -128,7 +128,16 @@ std::string resolveToPath(const openassetio::hostApi::ManagerPtr &manager,
   static constexpr std::string_view kFileURLScheme{"file://"};
   static constexpr std::size_t kProtocolSize = kFileURLScheme.size();
 
-  openassetio::Str url = LocatableContentTrait(traitsData).getLocation();
+  auto urlOpt = LocatableContentTrait(traitsData).getLocation();
+
+  if (!urlOpt.has_value()) {
+    std::string msg = "Location not found for entity: ";
+    msg += entityReference.toString();
+    throw std::runtime_error(msg);
+  }
+
+  auto url = *urlOpt;
+
   if (url.rfind(kFileURLScheme, 0) == openassetio::Str::npos) {
     std::string msg = "Only file URLs are supported: ";
     msg += url;
