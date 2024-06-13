@@ -19,6 +19,7 @@
 #include <openassetio/log/SeverityFilter.hpp>
 #include <openassetio/python/hostApi.hpp>
 #include <openassetio/trait/TraitsData.hpp>
+#include <openassetio/utils/path.hpp>
 
 #include <openassetio_mediacreation/traits/content/LocatableContentTrait.hpp>
 
@@ -29,21 +30,6 @@ TF_DEBUG_CODES(OPENASSETIO_RESOLVER)
 PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace {
-/*
- * Replaces all occurrences of the search string in the subject with
- * the supplied replacement.
- */
-void replaceAllInString(std::string &subject, const std::string &search,
-                        const std::string &replace) {
-  const size_t searchLength = search.length();
-  const size_t replaceLength = replace.length();
-  size_t pos = 0;
-  while ((pos = subject.find(search, pos)) != std::string::npos) {
-    subject.replace(pos, searchLength, replace);
-    pos += replaceLength;
-  }
-}
-
 /*
  * OpenAssetIO LoggerInterface implementation
  *
@@ -221,31 +207,14 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
     const openassetio::trait::TraitsDataPtr traitsData = manager_->resolve(
         entityReference, {LocatableContentTrait::kId}, ResolveAccess::kRead, context_);
 
-    // OpenAssetIO is URL based, but we need a path, so check the
-    // scheme and decode into a path
-
-    static constexpr std::string_view kFileURLScheme{"file://"};
-    static constexpr std::size_t kProtocolSize = kFileURLScheme.size();
-
-    auto urlOpt = LocatableContentTrait(traitsData).getLocation();
-
-    if (!urlOpt.has_value()) {
-      std::string msg = "Location not found for entity: ";
-      msg += entityReference.toString();
-      throw std::runtime_error(msg);
+    const std::optional<openassetio::Str> url = LocatableContentTrait(traitsData).getLocation();
+    if (!url) {
+      throw std::invalid_argument{"Entity reference does not have a location: " +
+                                  entityReference.toString()};
     }
-
-    auto url = *urlOpt;
-
-    if (url.rfind(kFileURLScheme, 0) == openassetio::Str::npos) {
-      std::string msg = "Only file URLs are supported: ";
-      msg += url;
-      throw std::runtime_error(msg);
-    }
-
-    // TODO(tc): Decode % escape sequences properly
-    replaceAllInString(url, "%20", " ");
-    return url.substr(kProtocolSize);
+    // OpenAssetIO is URL based, but we need a path. Note: will throw if
+    // the URL is not valid.
+    return fileUrlPathConverter_.pathFromUrl(*url);
   }
 
   /**
@@ -291,6 +260,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   openassetio::log::LoggerInterfacePtr logger_;
   openassetio::hostApi::ManagerPtr manager_;
   openassetio::ContextConstPtr context_;
+  openassetio::utils::FileUrlPathConverter fileUrlPathConverter_;
 };
 
 PXR_NAMESPACE_OPEN_SCOPE
