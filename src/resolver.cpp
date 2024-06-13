@@ -2,7 +2,6 @@
 // Copyright 2023 The Foundry Visionmongers Ltd
 
 #include <stdexcept>
-#include <thread>
 
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -18,7 +17,6 @@
 #include <openassetio/log/LoggerInterface.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
 #include <openassetio/python/hostApi.hpp>
-#include <openassetio/trait/TraitsData.hpp>
 #include <openassetio/utils/path.hpp>
 
 #include <openassetio_mediacreation/traits/content/LocatableContentTrait.hpp>
@@ -35,9 +33,9 @@ namespace {
  *
  * Converter logger from OpenAssetIO log framing to USD log outputs.
  */
-class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
+class UsdOpenAssetIOResolverLogger final : public openassetio::log::LoggerInterface {
  public:
-  void log(Severity severity, const openassetio::Str &message) override {
+  void log(const Severity severity, const openassetio::Str &message) override {
     switch (severity) {
       case Severity::kCritical:
         TF_ERROR(TfDiagnosticType::TF_DIAGNOSTIC_FATAL_ERROR_TYPE, message);
@@ -66,7 +64,7 @@ class UsdOpenAssetIOResolverLogger : public openassetio::log::LoggerInterface {
  * This identifies the Ar2 plugin uniquely should the manager plugin
  * wish to adapt its behaviour.
  */
-class UsdOpenAssetIOHostInterface : public openassetio::hostApi::HostInterface {
+class UsdOpenAssetIOHostInterface final : public openassetio::hostApi::HostInterface {
  public:
   [[nodiscard]] openassetio::Identifier identifier() const override {
     return "org.openassetio.usdresolver";
@@ -89,7 +87,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   UsdOpenAssetIOResolver() {
     logger_ =
         openassetio::log::SeverityFilter::make(std::make_shared<UsdOpenAssetIOResolverLogger>());
-    auto managerImplementationFactory =
+    const auto managerImplementationFactory =
         openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(
             logger_);
     const auto hostInterface = std::make_shared<UsdOpenAssetIOHostInterface>();
@@ -128,7 +126,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   [[nodiscard]] ArResolvedPath _Resolve(const std::string &assetPath) const override {
     return catchAndLogExceptions(
         [&] {
-          if (auto entityReference = manager_->createEntityReferenceIfValid(assetPath)) {
+          if (const auto entityReference = manager_->createEntityReferenceIfValid(assetPath)) {
             return ArResolvedPath{resolveToPath(*entityReference)};
           }
           return ArDefaultResolver::_Resolve(assetPath);
@@ -182,7 +180,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   }
 
   [[nodiscard]] std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
-      const ArResolvedPath &resolvedPath, WriteMode writeMode) const override {
+      const ArResolvedPath &resolvedPath, const WriteMode writeMode) const override {
     return ArDefaultResolver::_OpenAssetForWrite(resolvedPath, writeMode);
   }
 
