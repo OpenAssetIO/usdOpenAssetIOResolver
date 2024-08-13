@@ -52,14 +52,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
     option(OPENASSETIO_USDRESOLVER_GLIBCXX_USE_CXX11_ABI "For gcc, use the new C++11 library ABI" OFF)
 endif ()
 
-
-# Find USD.
-find_package(pxr REQUIRED)
-
-# Find OpenAssetIO
-find_package(OpenAssetIO REQUIRED)
-find_package(OpenAssetIO-MediaCreation REQUIRED)
-
 # Add Static analysis targets
 include(StaticAnalyzers)
 if (OPENASSETIO_USDRESOLVER_ENABLE_CLANG_FORMAT)
@@ -72,11 +64,28 @@ if (OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT)
     enable_cpplint()
 endif ()
 
+
+#-----------------------------------------------------------------------
+# Dependencies
+
+# Find USD.
+find_package(pxr REQUIRED)
+
+# Find OpenAssetIO
+find_package(OpenAssetIO REQUIRED)
+find_package(OpenAssetIO-MediaCreation REQUIRED)
+
+
+#-----------------------------------------------------------------------
+# Recurse to sources
+
 include(DefaultTargetProperties)
 add_subdirectory(src)
 
+
 #-----------------------------------------------------------------------
 # Print a status dump
+
 message(STATUS "Warnings as errors              = ${OPENASSETIO_USDRESOLVER_WARNINGS_AS_ERRORS}")
 message(STATUS "Linter: clang-tidy              = ${OPENASSETIO_USDRESOLVER_ENABLE_CLANG_TIDY} [${OPENASSETIO_USDRESOLVER_CLANGTIDY_EXE}]")
 message(STATUS "Linter: cpplint                 = ${OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT} [${OPENASSETIO_USDRESOLVER_CPPLINT_EXE}]")
