@@ -39,19 +39,6 @@ option(OPENASSETIO_USDRESOLVER_ENABLE_CLANG_TIDY "Enable clang-tidy analysis dur
 # Enable cpplint linter.
 option(OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT "Enable cpplint linter during build" OFF)
 
-
-# Disable C++11 ABI by default, as per current VFX reference
-# platform(s), but allow optionally enabling.
-# For reference, note that the default varies by platform, e.g.
-# * CentOS 7.9.2009's GCC 6.3, `_GLIBCXX_USE_CXX11_ABI` is
-#   always `0` and cannot be overridden.
-# * Ubuntu 18.04's GCC 6.5, `_GLIBCXX_USE_CXX11_ABI` defaults
-#   to `1`, but can be overridden.
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
-    option(OPENASSETIO_USDRESOLVER_GLIBCXX_USE_CXX11_ABI "For gcc, use the new C++11 library ABI" OFF)
-endif ()
-
 # Add Static analysis targets
 include(StaticAnalyzers)
 if (OPENASSETIO_USDRESOLVER_ENABLE_CLANG_FORMAT)

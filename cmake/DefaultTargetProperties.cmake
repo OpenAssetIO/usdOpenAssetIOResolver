@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2013-2022 The Foundry Visionmongers Ltd
+# Copyright 2013-2024 The Foundry Visionmongers Ltd
 
 include(CompilerWarnings)
 
@@ -7,7 +7,7 @@ function(openassetio_usdresolver_set_default_target_properties target_name)
     #-------------------------------------------------------------------
     # C++ standard
 
-    # Minimum C++ standard as per current VFX reference platform CY21+.
+    # Minimum C++ standard as per current VFX reference platform CY23+.
     target_compile_features(${target_name} PRIVATE cxx_std_17)
 
     set_target_properties(
@@ -41,16 +41,6 @@ function(openassetio_usdresolver_set_default_target_properties target_name)
     if (IS_GCC_OR_CLANG AND NOT APPLE)
         # TODO(TC): Find a way to hide symbols on macOS
         target_link_options(${target_name} PRIVATE "-Wl,--exclude-libs,ALL")
-    endif ()
-
-    # Whether to use the old or new C++ ABI with gcc.
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
-        CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
-        if (OPENASSETIO_USDRESOLVER_GLIBCXX_USE_CXX11_ABI)
-            target_compile_definitions(${target_name} PRIVATE _GLIBCXX_USE_CXX11_ABI=1)
-        else ()
-            target_compile_definitions(${target_name} PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
-        endif ()
     endif ()
 
     #-------------------------------------------------------------------
