@@ -39,27 +39,6 @@ option(OPENASSETIO_USDRESOLVER_ENABLE_CLANG_TIDY "Enable clang-tidy analysis dur
 # Enable cpplint linter.
 option(OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT "Enable cpplint linter during build" OFF)
 
-
-# Disable C++11 ABI by default, as per current VFX reference
-# platform(s), but allow optionally enabling.
-# For reference, note that the default varies by platform, e.g.
-# * CentOS 7.9.2009's GCC 6.3, `_GLIBCXX_USE_CXX11_ABI` is
-#   always `0` and cannot be overridden.
-# * Ubuntu 18.04's GCC 6.5, `_GLIBCXX_USE_CXX11_ABI` defaults
-#   to `1`, but can be overridden.
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
-    option(OPENASSETIO_USDRESOLVER_GLIBCXX_USE_CXX11_ABI "For gcc, use the new C++11 library ABI" OFF)
-endif ()
-
-
-# Find USD.
-find_package(pxr REQUIRED)
-
-# Find OpenAssetIO
-find_package(OpenAssetIO REQUIRED)
-find_package(OpenAssetIO-MediaCreation REQUIRED)
-
 # Add Static analysis targets
 include(StaticAnalyzers)
 if (OPENASSETIO_USDRESOLVER_ENABLE_CLANG_FORMAT)
@@ -72,11 +51,28 @@ if (OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT)
     enable_cpplint()
 endif ()
 
+
+#-----------------------------------------------------------------------
+# Dependencies
+
+# Find USD.
+find_package(pxr REQUIRED)
+
+# Find OpenAssetIO
+find_package(OpenAssetIO REQUIRED)
+find_package(OpenAssetIO-MediaCreation REQUIRED)
+
+
+#-----------------------------------------------------------------------
+# Recurse to sources
+
 include(DefaultTargetProperties)
 add_subdirectory(src)
 
+
 #-----------------------------------------------------------------------
 # Print a status dump
+
 message(STATUS "Warnings as errors              = ${OPENASSETIO_USDRESOLVER_WARNINGS_AS_ERRORS}")
 message(STATUS "Linter: clang-tidy              = ${OPENASSETIO_USDRESOLVER_ENABLE_CLANG_TIDY} [${OPENASSETIO_USDRESOLVER_CLANGTIDY_EXE}]")
 message(STATUS "Linter: cpplint                 = ${OPENASSETIO_USDRESOLVER_ENABLE_CPPLINT} [${OPENASSETIO_USDRESOLVER_CPPLINT_EXE}]")

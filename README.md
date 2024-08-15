@@ -111,17 +111,6 @@ cmake --build build
 cmake --install build
 ```
 
-> **Note**
->
-> VFX Reference Platform CY2022 requires the old pre c++11 ABI, which is
-> used by default for `gcc` builds of these projects. It is important
-> that `usdOpenAssetIOResolver`, `OpenAssetIO` and `USD` are all built
-> under the same ABI.
->
-> You can build under the new ABI by appending
-> `-DOPENASSETIO_USDRESOLVER_GLIBCXX_USE_CXX11_ABI=On` to your configure
-> command.
-
 ## Running
 
 To enable the resolver, before running any USD application, you must set
