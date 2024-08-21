@@ -38,18 +38,12 @@ from pxr import Plug, Usd, Ar, Sdf, Tf
 # patched `hasCapability`.
 @pytest.mark.forked
 def test_when_manager_cannot_resolve_then_exception_thrown(monkeypatch):
-    # pylint: disable=invalid-name,import-outside-toplevel
-    from openassetio_manager_bal.BasicAssetLibraryInterface import (
-        BasicAssetLibraryInterface,
+    # Use config that removes the "resolution" capability from the
+    # manager's advertised set of capabilities.
+    monkeypatch.setenv(
+        "OPENASSETIO_DEFAULT_CONFIG",
+        os.environ["OPENASSETIO_DEFAULT_CONFIG"] + ".incapable",
     )
-
-    Capability = BasicAssetLibraryInterface.Capability
-
-    # Patch BAL to report no resolution capability.
-    hasCapability = mock.Mock(spec=BasicAssetLibraryInterface.hasCapability)
-    monkeypatch.setattr(BasicAssetLibraryInterface, "hasCapability", hasCapability)
-
-    hasCapability.side_effect = lambda capability: capability != Capability.kResolution
 
     with pytest.raises(
         ValueError,
@@ -58,10 +52,6 @@ def test_when_manager_cannot_resolve_then_exception_thrown(monkeypatch):
         open_stage(
             "resources/integration_test_data/recursive_assetized_resolve/floors/floor 1.usd"
         )
-
-    # Interestingly, `assert_called_with` and `assert_has_calls` doesn't
-    # work here.
-    assert hasCapability.call_args == mock.call(Capability.kResolution)
 
 
 # Given a USD document that references an asset via a direct relative

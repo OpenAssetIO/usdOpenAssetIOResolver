@@ -1,0 +1,7 @@
+{
+  "capabilities": [
+    "entityReferenceIdentification",
+    "managementPolicyQueries",
+    "entityTraitIntrospection"
+  ]
+}
