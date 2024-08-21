@@ -47,7 +47,7 @@ def test_when_manager_cannot_resolve_then_exception_thrown(monkeypatch):
 
     with pytest.raises(
         ValueError,
-        match="Basic Asset Library 📖 is not capable of resolving entity references",
+        match=".+ is not capable of resolving entity references",
     ):
         open_stage(
             "resources/integration_test_data/recursive_assetized_resolve/floors/floor 1.usd"
@@ -119,15 +119,15 @@ def test_non_assetized_child_ref_assetized_grandchild():
     assert_parking_lot_structure(stage)
 
 
-# Will attempt to resolve `bal:///` (i.e. no path component), which
-# will trigger an exception in BAL internals.
+# Will attempt to resolve `bal:///doesntexist` (i.e. a non-existent
+# entity), which will trigger an exception in the manager internals.
 def test_error_triggering_asset_ref(capfd):
     open_stage(
         "resources/integration_test_data/error_triggering_asset_ref/parking_lot.usd"
     )
 
     logs = capfd.readouterr()
-    assert "BatchElementException: malformedEntityReference" in logs.err
+    assert "entityResolutionError" in logs.err
 
 
 def test_when_resolves_to_non_file_url_then_error():

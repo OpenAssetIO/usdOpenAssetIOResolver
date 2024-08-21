@@ -3,7 +3,7 @@
 def "ParkingLot"
 {
     def "ParkingLot_Floor_1" (
-        references = @bal:///@</ParkingLot_Floor>
+        references = @bal:///doesntexist@</ParkingLot_Floor>
     )
     {
     }

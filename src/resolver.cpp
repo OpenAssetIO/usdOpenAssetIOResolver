@@ -16,6 +16,8 @@
 #include <openassetio/hostApi/ManagerFactory.hpp>
 #include <openassetio/log/LoggerInterface.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
+#include <openassetio/pluginSystem/CppPluginSystemManagerImplementationFactory.hpp>
+#include <openassetio/pluginSystem/HybridPluginSystemManagerImplementationFactory.hpp>
 #include <openassetio/python/hostApi.hpp>
 #include <openassetio/utils/path.hpp>
 
@@ -87,17 +89,31 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   UsdOpenAssetIOResolver() {
     logger_ =
         openassetio::log::SeverityFilter::make(std::make_shared<UsdOpenAssetIOResolverLogger>());
-    const auto managerImplementationFactory =
+    // Python plugin system.
+    const auto pythonManagerImplementationFactory =
         openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(
             logger_);
+    // C++ plugin system.
+    const auto cppManagerImplementationFactory =
+        openassetio::pluginSystem::CppPluginSystemManagerImplementationFactory::make(logger_);
+    // Combined Python/C++ plugin system. Note: C++ is listed first so
+    // has priority.
+    const auto hybridManagerImplementationFactory =
+        openassetio::pluginSystem::HybridPluginSystemManagerImplementationFactory::make(
+            {cppManagerImplementationFactory, pythonManagerImplementationFactory}, logger_);
     const auto hostInterface = std::make_shared<UsdOpenAssetIOHostInterface>();
+    // Find the plugin configured using the OPENASSETIO_DEFAULT_CONFIG
+    // file, initialise it, and create the host-facing Manager
+    // middleware for us to communicate with it.
     manager_ = openassetio::hostApi::ManagerFactory::defaultManagerForInterface(
-        hostInterface, managerImplementationFactory, logger_);
+        hostInterface, hybridManagerImplementationFactory, logger_);
     if (!manager_) {
       throw std::invalid_argument{
           "No default manager configured, " +
           openassetio::hostApi::ManagerFactory::kDefaultManagerConfigEnvVarName};
     }
+    // This USD plugin is useless unless the manager plugin has the
+    // basic ability to `resolve(...)`.
     if (!manager_->hasCapability(openassetio::hostApi::Manager::Capability::kResolution)) {
       throw std::invalid_argument{manager_->displayName() +
                                   " is not capable of resolving entity references"};
