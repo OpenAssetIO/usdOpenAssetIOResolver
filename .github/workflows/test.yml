@@ -75,5 +75,6 @@ jobs:
           export PXR_PLUGINPATH_NAME=$GITHUB_WORKSPACE/build/dist/resources/plugInfo.json
           export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/openassetio-build/lib64
           export PYTHONPATH=/usr/local/lib/python/:$GITHUB_WORKSPACE/openassetio-build/lib/python3.11/site-packages:$GITHUB_WORKSPACE/openassetio-mediacreation-build/lib/python3.11/site-packages
+          export OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio_config.toml
           cd tests
           python -m pytest -v --capture=tee-sys .

@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The Foundry Visionmongers Ltd
+"""
+Tests for the OpenAssetIO USD Ar2 adapter.
+
+Note that OPENASSETIO_DEFAULT_CONFIG must point to a configuration file
+that in turn points to a manager plugin that will satisfy these tests.
+"""
 
 # pylint: disable=no-member,redefined-outer-name
 # pylint: disable=wrong-import-position,unused-import
@@ -205,17 +211,3 @@ def open_stage(path_relative_from_file, context=None):
         return Usd.Stage.Open(full_path, context)
 
     return Usd.Stage.Open(full_path)
-
-
-@pytest.fixture(autouse=True)
-def openasssetio_default_config(monkeypatch, resources_dir):
-    monkeypatch.setenv(
-        "OPENASSETIO_DEFAULT_CONFIG",
-        os.path.join(resources_dir, "openassetio_config.toml"),
-    )
-
-
-@pytest.fixture
-def resources_dir():
-    script_dir = os.path.realpath(os.path.dirname(__file__))
-    return os.path.join(script_dir, "resources")
