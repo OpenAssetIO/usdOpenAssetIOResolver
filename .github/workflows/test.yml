@@ -60,7 +60,6 @@ jobs:
 
       - run: |
           python -m pip install -r tests/requirements.txt
-          python -m pip install importlib-metadata
 
         # PYTHONPATH here is extended with `/usr/local/lib/python`
         # because the USD install on this docker container is odd, and
