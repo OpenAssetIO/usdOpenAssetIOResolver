@@ -70,11 +70,20 @@ jobs:
         # LD_LIBRARY_PATH doesn't have /usr/local/lib on it by default
         # like you might expect because we're running as root, so we
         # just append it (it's so we can find python itself.)
-      - name: Test
+
+      - name: Configure environment
         run: |
-          export PXR_PLUGINPATH_NAME=$GITHUB_WORKSPACE/build/dist/resources/plugInfo.json
-          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/openassetio-build/lib64
-          export PYTHONPATH=/usr/local/lib/python/:$GITHUB_WORKSPACE/openassetio-build/lib/python3.11/site-packages:$GITHUB_WORKSPACE/openassetio-mediacreation-build/lib/python3.11/site-packages
-          export OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio_config_python.toml
-          cd tests
-          python -m pytest -v --capture=tee-sys .
+          echo "PXR_PLUGINPATH_NAME=$GITHUB_WORKSPACE/build/dist/resources/plugInfo.json" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/openassetio-build/lib64" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=/usr/local/lib/python/:$GITHUB_WORKSPACE/openassetio-build/lib/python3.11/site-packages:$GITHUB_WORKSPACE/openassetio-mediacreation-build/lib/python3.11/site-packages" >> "$GITHUB_ENV"
+
+      - name: Test (Python manager)
+        run: |
+          export "OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio_config_python.toml"
+          python -m pytest -v --capture=tee-sys tests
+
+      - name: Test (C++ manager)
+        run: |
+          export "OPENASSETIO_DEFAULT_CONFIG=$GITHUB_WORKSPACE/tests/resources/openassetio_config_cpp.toml"
+          export "OPENASSETIO_PLUGIN_PATH=$GITHUB_WORKSPACE/openassetio-build"
+          python -m pytest -v --capture=tee-sys tests
