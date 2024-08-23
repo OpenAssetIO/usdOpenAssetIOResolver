@@ -1,0 +1,18 @@
+# This config sets up the SimpleCppManager C++ manager/plugin for use in
+# the main test cases.
+
+[manager]
+identifier = "org.openassetio.examples.manager.simplecppmanager"
+
+[manager.settings]
+# Pretend to be BasicAssetLibrary aka BAL. This is so a single set of
+# USD files can be used for both Python and C++ testing.
+prefix = "bal:///"
+
+read_traits = '''
+bal:///not_a_file,openassetio-mediacreation:content.LocatableContent,location,https://stuffonmycat.com
+bal:///recursive_assetized_resolve/floor,openassetio-mediacreation:content.LocatableContent,location,file://${config_dir}/integration_test_data/recursive_assetized_resolve/floors/floor%20%40%201.usd
+bal:///recursive_assetized_resolve/car,openassetio-mediacreation:content.LocatableContent,location,file://${config_dir}/integration_test_data/recursive_assetized_resolve/cars/car.usd
+bal:///assetized_child_ref_non_assetized_grandchild/floor,openassetio-mediacreation:content.LocatableContent,location,file://${config_dir}/integration_test_data/assetized_child_ref_non_assetized_grandchild/floor1.usd
+bal:///non_assetized_child_ref_assetized_grandchild/car,openassetio-mediacreation:content.LocatableContent,location,file://${config_dir}/integration_test_data/non_assetized_child_ref_assetized_grandchild/car.usd
+'''

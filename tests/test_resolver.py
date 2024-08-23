@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The Foundry Visionmongers Ltd
+"""
+Tests for the OpenAssetIO USD Ar2 adapter.
+
+Note that OPENASSETIO_DEFAULT_CONFIG must point to a configuration file
+that in turn points to a manager plugin that will satisfy these tests.
+"""
 
 # pylint: disable=no-member,redefined-outer-name
 # pylint: disable=wrong-import-position,unused-import
@@ -32,30 +38,20 @@ from pxr import Plug, Usd, Ar, Sdf, Tf
 # patched `hasCapability`.
 @pytest.mark.forked
 def test_when_manager_cannot_resolve_then_exception_thrown(monkeypatch):
-    # pylint: disable=invalid-name,import-outside-toplevel
-    from openassetio_manager_bal.BasicAssetLibraryInterface import (
-        BasicAssetLibraryInterface,
+    # Use config that removes the "resolution" capability from the
+    # manager's advertised set of capabilities.
+    monkeypatch.setenv(
+        "OPENASSETIO_DEFAULT_CONFIG",
+        os.environ["OPENASSETIO_DEFAULT_CONFIG"] + ".incapable",
     )
-
-    Capability = BasicAssetLibraryInterface.Capability
-
-    # Patch BAL to report no resolution capability.
-    hasCapability = mock.Mock(spec=BasicAssetLibraryInterface.hasCapability)
-    monkeypatch.setattr(BasicAssetLibraryInterface, "hasCapability", hasCapability)
-
-    hasCapability.side_effect = lambda capability: capability != Capability.kResolution
 
     with pytest.raises(
         ValueError,
-        match="Basic Asset Library 📖 is not capable of resolving entity references",
+        match=".+ is not capable of resolving entity references",
     ):
         open_stage(
             "resources/integration_test_data/recursive_assetized_resolve/floors/floor 1.usd"
         )
-
-    # Interestingly, `assert_called_with` and `assert_has_calls` doesn't
-    # work here.
-    assert hasCapability.call_args == mock.call(Capability.kResolution)
 
 
 # Given a USD document that references an asset via a direct relative
@@ -123,15 +119,15 @@ def test_non_assetized_child_ref_assetized_grandchild():
     assert_parking_lot_structure(stage)
 
 
-# Will attempt to resolve `bal:///` (i.e. no path component), which
-# will trigger an exception in BAL internals.
+# Will attempt to resolve `bal:///doesntexist` (i.e. a non-existent
+# entity), which will trigger an exception in the manager internals.
 def test_error_triggering_asset_ref(capfd):
     open_stage(
         "resources/integration_test_data/error_triggering_asset_ref/parking_lot.usd"
     )
 
     logs = capfd.readouterr()
-    assert "BatchElementException: malformedEntityReference" in logs.err
+    assert "entityResolutionError" in logs.err
 
 
 def test_when_resolves_to_non_file_url_then_error():
@@ -205,17 +201,3 @@ def open_stage(path_relative_from_file, context=None):
         return Usd.Stage.Open(full_path, context)
 
     return Usd.Stage.Open(full_path)
-
-
-@pytest.fixture(autouse=True)
-def openasssetio_default_config(monkeypatch, resources_dir):
-    monkeypatch.setenv(
-        "OPENASSETIO_DEFAULT_CONFIG",
-        os.path.join(resources_dir, "openassetio_config.toml"),
-    )
-
-
-@pytest.fixture
-def resources_dir():
-    script_dir = os.path.realpath(os.path.dirname(__file__))
-    return os.path.join(script_dir, "resources")

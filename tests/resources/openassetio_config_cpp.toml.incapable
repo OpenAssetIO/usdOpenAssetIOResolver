@@ -1,0 +1,11 @@
+# This config sets up the SimpleCppManager C++ manager/plugin without
+# the "resolution" capability, for use in the
+# `test_when_manager_cannot_resolve_then_exception_thrown` test case.
+
+[manager]
+identifier = "org.openassetio.examples.manager.simplecppmanager"
+
+[manager.settings]
+# Only the minimal set of capabilities required to load a plugin - i.e.
+# missing the "resolution" capability.
+capabilities="entityReferenceIdentification,managementPolicyQueries,entityTraitIntrospection"

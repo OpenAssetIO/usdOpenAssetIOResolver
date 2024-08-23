@@ -1,0 +1,9 @@
+# This config sets up the BasicAssetLibrary (aka BAL) Python
+# manager/plugin without the "resolution" capability, for use in the
+# `test_when_manager_cannot_resolve_then_exception_thrown` test case.
+
+[manager]
+identifier = "org.openassetio.examples.manager.bal"
+
+[manager.settings]
+library_path = "${config_dir}/integration_test_data/bal_library_incapable.json"

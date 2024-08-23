@@ -1,3 +1,6 @@
+# This config sets up the BasicAssetLibrary (aka BAL) Python
+# manager/plugin for use in the main test cases.
+
 [manager]
 identifier = "org.openassetio.examples.manager.bal"
 

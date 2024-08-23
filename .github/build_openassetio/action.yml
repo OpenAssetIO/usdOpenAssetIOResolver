@@ -21,7 +21,7 @@ runs:
       run: |
         cd openassetio-checkout
         mkdir build
-        cmake -G Ninja -S . -B build
+        cmake -G Ninja -S . -B build -DOPENASSETIO_ENABLE_SIMPLECPPMANAGER=ON
         cmake --build build
         cmake --install build
 
