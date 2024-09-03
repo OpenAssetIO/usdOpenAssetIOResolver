@@ -83,13 +83,13 @@ jobs:
           cpplint --version
 
       - name: Get OpenAssetIO
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: OpenAssetIO Build
           path: ./openassetio-build
 
       - name: Get OpenAssetIO-MediaCreation
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: OpenAssetIO-MediaCreation Build
           path: ./openassetio-mediacreation-build
