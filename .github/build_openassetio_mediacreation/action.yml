@@ -26,7 +26,7 @@ runs:
         cmake --build build
         cmake --install build
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: OpenAssetIO-MediaCreation Build
         path: openassetio-mediacreation-checkout/build/dist
