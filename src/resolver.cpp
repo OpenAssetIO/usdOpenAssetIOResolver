@@ -118,7 +118,7 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
       throw std::invalid_argument{manager_->displayName() +
                                   " is not capable of resolving entity references"};
     }
-    context_ = openassetio::Context::make();
+    context_ = manager_->createContext();
   }
 
   ~UsdOpenAssetIOResolver() override = default;
