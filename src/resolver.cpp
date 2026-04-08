@@ -214,14 +214,14 @@ class UsdOpenAssetIOResolver final : public PXR_NS::ArDefaultResolver {
   [[nodiscard]] std::string resolveToPath(
       const openassetio::EntityReference &entityReference) const {
     using openassetio::access::ResolveAccess;
-    using openassetio_mediacreation::traits::content::LocatableContentTrait;
+    using openassetio_mediacreation::traits::content::LocatableContentTrait_v1;
 
     // Resolve the locatable content trait, this will provide a URL
     // that points to the final content
     const openassetio::trait::TraitsDataPtr traitsData = manager_->resolve(
-        entityReference, {LocatableContentTrait::kId}, ResolveAccess::kRead, context_);
+        entityReference, {LocatableContentTrait_v1::kId}, ResolveAccess::kRead, context_);
 
-    const std::optional<openassetio::Str> url = LocatableContentTrait(traitsData).getLocation();
+    const std::optional<openassetio::Str> url = LocatableContentTrait_v1(traitsData).getLocation();
     if (!url) {
       throw std::invalid_argument{"Entity reference does not have a location: " +
                                   entityReference.toString()};
