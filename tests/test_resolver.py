@@ -27,7 +27,6 @@ if "PXR_PLUGINPATH_NAME" not in os.environ:
 
 from pxr import Plug, Usd, Ar, Sdf, Tf
 
-
 # TODO(DF): More tests for error cases.
 
 
