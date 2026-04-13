@@ -1,4 +1,4 @@
-pytest==6.2.4
+pytest==9.0.3
 # pytest plugin that adds @pytest.mark.forked to flag a test that should
 # run in a forked subprocess. Useful for testing global initialization
 # code paths.
